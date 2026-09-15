@@ -1,0 +1,34 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Swift version
+      run: swift --version
+
+    - name: Install SwiftLint
+      run: brew install swiftlint
+
+    - name: Lint
+      run: make lint
+
+    - name: Build
+      run: make test-build
+
+    - name: Run tests
+      run: make test
