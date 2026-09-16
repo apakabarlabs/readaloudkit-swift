@@ -8,7 +8,8 @@ let package = Package(
         .library(name: "ReadAloudKit", targets: ["ReadAloudKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apakabarlabs/readalign-swift", from: "0.5.0")
+        .package(url: "https://github.com/apakabarlabs/readalign-swift", from: "0.5.0"),
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.3.0")
     ],
     targets: [
         .target(

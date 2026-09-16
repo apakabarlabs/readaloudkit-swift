@@ -1,4 +1,5 @@
 [![Tests](https://github.com/apakabarlabs/readaloudkit-swift/actions/workflows/tests.yml/badge.svg)](https://github.com/apakabarlabs/readaloudkit-swift/actions/workflows/tests.yml)
+[![Documentation](https://github.com/apakabarlabs/readaloudkit-swift/actions/workflows/documentation.yml/badge.svg)](https://apakabarlabs.github.io/readaloudkit-swift/documentation/readaloudkit/)
 # readaloudkit-swift
 
 Decides whether a person reading a printed text aloud said what is written, and
@@ -34,3 +35,16 @@ let saidEveryWord = check.faithful.count == check.matches.count
 A tool that hears our own recordings back before they ship uses this same code,
 so that the bar a reader is held to is the bar the recordings are held to. A
 recording that would fail a reader is caught before anyone reads it.
+
+## Documentation
+
+The [Swift-DocC API reference](https://apakabarlabs.github.io/readaloudkit-swift/documentation/readaloudkit/)
+is generated from the public API on every push to `main`.
+
+## Lines of Code
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/loc-history-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/loc-history-light.svg">
+  <img src=".github/loc-history.svg" alt="Lines of code over time">
+</picture>
