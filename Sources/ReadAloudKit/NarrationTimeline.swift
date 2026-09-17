@@ -8,6 +8,8 @@ public struct WordTiming: Sendable, Equatable {
 }
 
 public enum NarrationTimeline {
+    private static let minimumSpeechFraction = 0.5
+    private static let binarySearchDivisor = 2
     public static let leadIn: TimeInterval = 0.35
     public static let linePause: TimeInterval = 0.35
 
@@ -21,7 +23,7 @@ public enum NarrationTimeline {
         guard !words.isEmpty, duration > 0 else { return [] }
 
         let pauses = TimeInterval(max(passage.lines.count - 1, 0)) * linePause
-        let speech = max(duration - leadIn - pauses, duration * 0.5)
+        let speech = max(duration - leadIn - pauses, duration * minimumSpeechFraction)
         let weights = words.map { weighting.weight(of: $0.text) }
         let totalWeight = weights.reduce(0, +)
         guard totalWeight > 0 else { return [] }
@@ -133,7 +135,12 @@ public enum NarrationTimeline {
         }
     }
 
-    public static func range(ofLine lineIndex: Int, in timings: [WordTiming]) -> ClosedRange<TimeInterval>? {
+    public static func range(
+        ofLine lineIndex: Int,
+        in timings: [WordTiming]
+    ) -> ClosedRange<
+        TimeInterval
+    >? {
         range(ofLines: lineIndex...lineIndex, in: timings)
     }
 
@@ -164,7 +171,8 @@ public enum NarrationTimeline {
         let time = range.lowerBound + (range.upperBound - range.lowerBound) * clamped
         guard let index = index(at: time, in: timings) else {
             let isExactlyAtTheEnd = clamped >= 1
-            return isExactlyAtTheEnd ? timings.last(where: { lines.contains($0.word.lineIndex) })?.word : nil
+            return isExactlyAtTheEnd
+                ? timings.last { lines.contains($0.word.lineIndex) }?.word : nil
         }
         return timings[index].word
     }
@@ -175,7 +183,7 @@ public enum NarrationTimeline {
         var low = 0
         var high = timings.count - 1
         while low <= high {
-            let middle = (low + high) / 2
+            let middle = (low + high) / binarySearchDivisor
             let timing = timings[middle]
             if time < timing.start {
                 high = middle - 1

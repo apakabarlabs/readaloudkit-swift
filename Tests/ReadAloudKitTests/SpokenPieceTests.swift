@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ReadAloudKit
 
 struct SpokenPieceTests {
@@ -28,9 +29,11 @@ struct SpokenPieceTests {
         #expect(!progress.isComplete)
         #expect(progress.checks.filter { $0 != .correct }.count == 1)
         #expect(progress.checks.contains(.close))
-        #expect(tracker.attempts(in: progress).filter { $0.check != .correct } == [
-            WordAttempt(word: "riper", check: .close)
-        ])
+        #expect(
+            tracker.attempts(in: progress).filter { $0.check != .correct } == [
+                WordAttempt(word: "riper", check: .close)
+            ]
+        )
     }
 
     @Test("word attempts use the passage spelling and include correct words")

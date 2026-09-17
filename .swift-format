@@ -1,0 +1,12 @@
+{
+  "indentation": {
+    "spaces": 4
+  },
+  "lineBreakBeforeEachArgument": true,
+  "prioritizeKeepingFunctionOutputTogether": true,
+  "multiElementCollectionTrailingCommas": false,
+  "rules": {
+    "NoAccessLevelOnExtensionDeclaration": true
+  },
+  "version": 1
+}

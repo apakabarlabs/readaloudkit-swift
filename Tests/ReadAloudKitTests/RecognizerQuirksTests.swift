@@ -1,16 +1,17 @@
 import Foundation
 import Testing
+
 @testable import ReadAloudKit
 
 struct RecognizerQuirksTests {
     private let table = Data(
         """
         {
-          "parakeet": {
-            "tatter'd": ["tattered"],
-            "in": [{"heard": "and", "after": "each"}]
-          },
-          "spotless": {}
+            "parakeet": {
+                "tatter'd": ["tattered"],
+                "in": [{"heard": "and", "after": "each"}]
+            },
+            "spotless": {}
         }
         """.utf8
     )
@@ -41,7 +42,7 @@ struct RecognizerQuirksTests {
     func keysThatNormalizeAlikeAreMerged() {
         let quirks = RecognizerQuirks(allowances: [
             "Whate’er": ["whatever"],
-            "whate’er": ["what’er"],
+            "whate’er": ["what’er"]
         ])
         #expect(quirks.allows("whatever", forWritten: "Whate’er"))
         #expect(quirks.allows("whater", forWritten: "whate’er"))

@@ -28,16 +28,19 @@ public enum SpokenWords {
         let matches = TranscriptAligner.pair(
             expected: expected,
             heard: heard,
-            threshold: threshold,
-            equivalent: { quirks.allows($1, forWritten: $0, after: $2) }
-        )
+            threshold: threshold
+        ) { written, said, preceding in
+            quirks.allows(said, forWritten: written, after: preceding)
+        }
         var faithful: Set<Int> = []
         for (index, match) in matches.enumerated() {
             let said = heard[match.heard].joined()
             let written = expected[match.expected].joined()
-            let before = match.expected.lowerBound > 0 ? expected[match.expected.lowerBound - 1] : nil
+            let before =
+                match.expected.lowerBound > 0 ? expected[match.expected.lowerBound - 1] : nil
             if SpokenLineTracker.isFaithful(said, to: written)
-                || quirks.allows(said, forWritten: written, after: before) {
+                || quirks.allows(said, forWritten: written, after: before)
+            {
                 faithful.insert(index)
             }
         }

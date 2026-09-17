@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ReadAloudKit
 
 struct NarrationAlignmentTests {
@@ -35,7 +36,8 @@ struct NarrationAlignmentTests {
     func refusesDriftedText() {
         let edited = Passage(lines: ["From fairest creatures", "we desire increase, and more"])
 
-        #expect(throws: NarrationAlignment.AlignmentError.wordCountMismatch(expected: 8, found: 6)) {
+        #expect(throws: NarrationAlignment.AlignmentError.wordCountMismatch(expected: 8, found: 6))
+        {
             try alignment(words: measured).timings(for: edited)
         }
     }
@@ -44,7 +46,13 @@ struct NarrationAlignmentTests {
     func refusesChangedWord() {
         let edited = Passage(lines: ["From fairest creatures", "we desire increases,"])
 
-        #expect(throws: NarrationAlignment.AlignmentError.wordMismatch(index: 5, expected: "increases", found: "increase")) {
+        #expect(
+            throws: NarrationAlignment.AlignmentError.wordMismatch(
+                index: 5,
+                expected: "increases",
+                found: "increase"
+            )
+        ) {
             try alignment(words: measured).timings(for: edited)
         }
     }

@@ -1,10 +1,14 @@
 import Testing
+
 @testable import ReadAloudKit
 
 struct WaveformEnvelopeTests {
     @Test("silence stays flat and sound keeps its shape")
     func preservesShape() {
-        let envelope = WaveformEnvelope.make(from: [Float](repeating: 0, count: 8) + [Float](repeating: 0.5, count: 8), bars: 4)
+        let envelope = WaveformEnvelope.make(
+            from: [Float](repeating: 0, count: 8) + [Float](repeating: 0.5, count: 8),
+            bars: 4
+        )
 
         #expect(envelope.count == 4)
         #expect(envelope[0] == 0)

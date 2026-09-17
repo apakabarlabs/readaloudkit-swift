@@ -7,7 +7,7 @@ public struct WordTokenizer: Sendable {
         self.interiorMarks = interiorMarks
     }
 
-    public static let latinScript = WordTokenizer(
+    public static let latinScript = Self(
         interiorMarks: CharacterSet(charactersIn: "'’-")
     )
 
@@ -36,14 +36,21 @@ public struct WordTokenizer: Sendable {
     public func segments(in line: String) -> [LineSegment] {
         let ranges = wordRanges(in: line)
         guard !ranges.isEmpty else {
-            let wordless = LineSegment(wordIndex: nil, openingMarks: "", word: "", closingMarks: line, space: "")
+            let wordless = LineSegment(
+                wordIndex: nil,
+                openingMarks: "",
+                word: "",
+                closingMarks: line,
+                space: ""
+            )
             return line.isEmpty ? [] : [wordless]
         }
 
         let openings = ranges.enumerated().map { index, range in
-            openingMarkStart(
+            let gapStart = index == 0 ? line.startIndex : ranges[index - 1].upperBound
+            return openingMarkStart(
                 in: line,
-                gap: (index == 0 ? line.startIndex : ranges[index - 1].upperBound)..<range.lowerBound,
+                gap: gapStart..<range.lowerBound,
                 isFirstWord: index == 0
             )
         }
@@ -51,7 +58,15 @@ public struct WordTokenizer: Sendable {
         var segments: [LineSegment] = []
         let runIn = String(line[line.startIndex..<openings[0]])
         if !runIn.isEmpty {
-            segments.append(LineSegment(wordIndex: nil, openingMarks: "", word: "", closingMarks: "", space: runIn))
+            segments.append(
+                LineSegment(
+                    wordIndex: nil,
+                    openingMarks: "",
+                    word: "",
+                    closingMarks: "",
+                    space: runIn
+                )
+            )
         }
         for (index, range) in ranges.enumerated() {
             let untilNextWordsMarks = index + 1 < ranges.count ? openings[index + 1] : line.endIndex
@@ -70,7 +85,13 @@ public struct WordTokenizer: Sendable {
         return segments
     }
 
-    private func openingMarkStart(in line: String, gap: Range<String.Index>, isFirstWord: Bool) -> String.Index {
+    private func openingMarkStart(
+        in line: String,
+        gap: Range<String.Index>,
+        isFirstWord: Bool
+    )
+        -> String.Index
+    {
         guard let lastSpace = line[gap].lastIndex(where: \.isWhitespace) else {
             let marksStandWithTheWordBefore = !isFirstWord
             return marksStandWithTheWordBefore ? gap.upperBound : gap.lowerBound
@@ -103,7 +124,12 @@ public struct WordTokenizer: Sendable {
         return hasStarted && character.unicodeScalars.allSatisfy(interiorMarks.contains)
     }
 
-    private func trimInteriorMarks(in line: String, range: Range<String.Index>) -> Range<String.Index> {
+    private func trimInteriorMarks(
+        in line: String,
+        range: Range<String.Index>
+    ) -> Range<
+        String.Index
+    > {
         var end = range.upperBound
         while end > range.lowerBound {
             let previous = line.index(before: end)

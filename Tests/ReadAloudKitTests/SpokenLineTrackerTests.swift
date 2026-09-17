@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ReadAloudKit
 
 struct SpokenLineTrackerTests {
@@ -111,7 +112,10 @@ struct SpokenLineTrackerTests {
     @Test("a patch fires only where its own word is expected")
     func keepsAPatchToItsOwnWord() {
         let quirks = RecognizerQuirks(allowances: ["th’": ["the"]])
-        let elided = SpokenLineTracker(line: "Which, used, lives th’ executor to be.", quirks: quirks)
+        let elided = SpokenLineTracker(
+            line: "Which, used, lives th’ executor to be.",
+            quirks: quirks
+        )
         let plain = SpokenLineTracker(line: "And only herald to the gaudy spring,", quirks: quirks)
 
         #expect(elided.progress(heard: "which used lives the executor to be").isComplete)
@@ -150,8 +154,12 @@ struct SpokenLineTrackerTests {
 
     @Test("a hyphenated word heard as two words still counts as said")
     func joinsWordsTheRecogniserSplit() {
-        let hyphenated = SpokenLineTracker(line: "Feed’st thy light’s flame with self-substantial fuel,")
-        let progress = hyphenated.progress(heard: "feedst thy lights flame with self substantial fuel")
+        let hyphenated = SpokenLineTracker(
+            line: "Feed’st thy light’s flame with self-substantial fuel,"
+        )
+        let progress = hyphenated.progress(
+            heard: "feedst thy lights flame with self substantial fuel"
+        )
 
         #expect(progress.isComplete)
     }
@@ -159,7 +167,10 @@ struct SpokenLineTrackerTests {
     @Test("a patched word heard as two words still counts as said")
     func joinsTwoHeardWordsThroughThePatchTable() {
         let quirks = RecognizerQuirks(allowances: ["long-liv’d": ["longlived"]])
-        let line = SpokenLineTracker(line: "And burn the long-liv’d phoenix, in her blood;", quirks: quirks)
+        let line = SpokenLineTracker(
+            line: "And burn the long-liv’d phoenix, in her blood;",
+            quirks: quirks
+        )
 
         #expect(line.progress(heard: "and burn the long lived phoenix in her blood").isComplete)
     }
@@ -174,7 +185,9 @@ struct SpokenLineTrackerTests {
 
     @Test("elisions in the verse are matched the way they are heard")
     func matchesElisions() {
-        let elided = SpokenLineTracker(line: "Feed’st thy light’s flame with self-substantial fuel,")
+        let elided = SpokenLineTracker(
+            line: "Feed’st thy light’s flame with self-substantial fuel,"
+        )
         let progress = elided.progress(heard: "feedst thy lights flame with self substantial fuel")
 
         #expect(progress.checks.allSatisfy { $0 == .correct })

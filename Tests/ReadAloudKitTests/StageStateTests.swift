@@ -1,20 +1,25 @@
 import Testing
+
 @testable import ReadAloudKit
 
 struct StageStateTests {
-    @Test func aStageOfNoPiecesIsUntouchedRatherThanComplete() {
+    @Test
+    func aStageOfNoPiecesIsUntouchedRatherThanComplete() {
         #expect(StageState.read([]) == .untouched)
     }
 
-    @Test func everyPieceClearedMakesTheStageComplete() {
+    @Test
+    func everyPieceClearedMakesTheStageComplete() {
         #expect(StageState.read(Array(repeating: .cleared, count: 3)) == .complete)
     }
 
-    @Test func oneTriedPieceMakesTheStageStarted() {
+    @Test
+    func oneTriedPieceMakesTheStageStarted() {
         #expect(StageState.read([.tried, .untouched]) == .started)
     }
 
-    @Test func untouchedPiecesLeaveTheStageUntouched() {
+    @Test
+    func untouchedPiecesLeaveTheStageUntouched() {
         #expect(StageState.read(Array(repeating: .untouched, count: 3)) == .untouched)
     }
 }

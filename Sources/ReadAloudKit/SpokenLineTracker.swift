@@ -3,15 +3,15 @@ import ReadAlign
 
 public enum WordReadingState: Sendable, Equatable {
     case ahead
-    case expected
-    case said
     case close
+    case expected
     case missed
+    case said
 }
 
 public enum WordCheck: String, Codable, Sendable, Equatable {
-    case correct
     case close
+    case correct
     case wrong
 }
 
@@ -34,8 +34,8 @@ public struct SpokenLineTracker: Sendable {
         public var isComplete: Bool { !checks.isEmpty && checks.allSatisfy { $0 == .correct } }
         public var isAllWrong: Bool { !checks.isEmpty && checks.allSatisfy { $0 == .wrong } }
         public var wordStates: [WordReadingState] {
-            checks.map {
-                switch $0 {
+            checks.map { check in
+                switch check {
                 case .correct: .said
                 case .close: .close
                 case .wrong: .missed
@@ -66,12 +66,17 @@ public struct SpokenLineTracker: Sendable {
         tokenizer: WordTokenizer = .latinScript
     ) {
         let words = lines.map { line in tokenizer.wordRanges(in: line).map { String(line[$0]) } }
-        expected = words.flatMap { $0 }
+        expected = words.flatMap(\.self)
         lineLengths = words.map(\.count)
         self.quirks = quirks
     }
 
-    public static func wordsPerLine(of lines: [String], tokenizer: WordTokenizer = .latinScript) -> [Int] {
+    public static func wordsPerLine(
+        of lines: [String],
+        tokenizer: WordTokenizer = .latinScript
+    )
+        -> [Int]
+    {
         lines.map { tokenizer.wordRanges(in: $0).count }
     }
 
@@ -87,7 +92,8 @@ public struct SpokenLineTracker: Sendable {
         return Array(states[start..<end])
     }
 
-    public func wordStates(_ states: [WordReadingState], forLineAt index: Int) -> [WordReadingState] {
+    public func wordStates(_ states: [WordReadingState], forLineAt index: Int) -> [WordReadingState]
+    {
         Self.wordStates(states, forLineAt: index, wordsPerLine: lineLengths)
     }
 
@@ -95,7 +101,12 @@ public struct SpokenLineTracker: Sendable {
         expected.indices.map { $0 == 0 ? .expected : .ahead }
     }
 
-    public func progress(heard transcript: String, tokenizer: WordTokenizer = .latinScript) -> Progress {
+    public func progress(
+        heard transcript: String,
+        tokenizer: WordTokenizer = .latinScript
+    )
+        -> Progress
+    {
         let heard = tokenizer.wordRanges(in: transcript).map { String(transcript[$0]) }
         let checked = SpokenWords.check(expected: expected, heard: heard, quirks: quirks)
         var checks = [WordCheck](repeating: .wrong, count: expected.count)
@@ -118,7 +129,8 @@ public struct SpokenLineTracker: Sendable {
     }
 
     private static func writesOut(_ said: String, elidedIn written: String) -> Bool {
-        let parts = written
+        let parts =
+            written
             .components(separatedBy: CharacterSet(charactersIn: "’'"))
             .map(TranscriptAligner.normalize)
         guard parts.count > 1 else { return false }

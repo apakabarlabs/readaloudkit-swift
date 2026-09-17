@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ReadAloudKit
 
 struct PieceProgressTests {
@@ -18,7 +19,7 @@ struct PieceProgressTests {
                 .tried,
                 .untouched,
                 .cleared,
-                .untouched,
+                .untouched
             ]
         )
     }

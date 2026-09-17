@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ReadAloudKit
 
 struct WordTokenizerTests {
@@ -11,10 +12,14 @@ struct WordTokenizerTests {
 
     @Test("apostrophes hold elisions together, in either shape")
     func keepsElisions() {
-        #expect(words("That thereby beauty’s rose might never die,")
-            == ["That", "thereby", "beauty’s", "rose", "might", "never", "die"])
-        #expect(words("Feed'st thy light's flame")
-            == ["Feed'st", "thy", "light's", "flame"])
+        #expect(
+            words("That thereby beauty’s rose might never die,")
+                == ["That", "thereby", "beauty’s", "rose", "might", "never", "die"]
+        )
+        #expect(
+            words("Feed'st thy light's flame")
+                == ["Feed'st", "thy", "light's", "flame"]
+        )
     }
 
     @Test("hyphens hold compounds together")
@@ -24,16 +29,22 @@ struct WordTokenizerTests {
 
     @Test("punctuation between words is dropped")
     func dropsPunctuation() {
-        #expect(words("Thy self thy foe, to thy sweet self too cruel:")
-            == ["Thy", "self", "thy", "foe", "to", "thy", "sweet", "self", "too", "cruel"])
+        #expect(
+            words("Thy self thy foe, to thy sweet self too cruel:")
+                == ["Thy", "self", "thy", "foe", "to", "thy", "sweet", "self", "too", "cruel"]
+        )
     }
 
     @Test("quotation marks stay outside the words they wrap")
     func handlesQuotedSpeech() {
-        #expect(words("If thou couldst answer ‘This fair child of mine")
-            == ["If", "thou", "couldst", "answer", "This", "fair", "child", "of", "mine"])
-        #expect(words("Shall sum my count, and make my old excuse,’")
-            == ["Shall", "sum", "my", "count", "and", "make", "my", "old", "excuse"])
+        #expect(
+            words("If thou couldst answer ‘This fair child of mine")
+                == ["If", "thou", "couldst", "answer", "This", "fair", "child", "of", "mine"]
+        )
+        #expect(
+            words("Shall sum my count, and make my old excuse,’")
+                == ["Shall", "sum", "my", "count", "and", "make", "my", "old", "excuse"]
+        )
     }
 
     @Test("a line with no letters yields no words")
@@ -104,7 +115,9 @@ struct WordTokenizerTests {
     func respectsItsMarkSet() {
         let plain = WordTokenizer(interiorMarks: CharacterSet(charactersIn: "-"))
 
-        #expect(plain.wordRanges(in: "beauty's rose").map { String("beauty's rose"[$0]) }
-            == ["beauty", "s", "rose"])
+        #expect(
+            plain.wordRanges(in: "beauty's rose").map { String("beauty's rose"[$0]) }
+                == ["beauty", "s", "rose"]
+        )
     }
 }

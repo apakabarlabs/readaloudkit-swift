@@ -40,11 +40,16 @@ public enum VerseLayoutPlanner {
             var total = (widest - width) * narrowingPenaltyPerPoint
             var rows: [[Int]] = []
             for words in lines {
-                let line = breakLine(words: words, spaceWidth: spaceWidth, width: width, indent: indent)
+                let line = breakLine(
+                    words: words,
+                    spaceWidth: spaceWidth,
+                    width: width,
+                    indent: indent
+                )
                 total += line.cost
                 rows.append(line.starts)
             }
-            if best == nil || total < best!.cost {
+            if best.map({ total < $0.cost }) ?? true {
                 best = Candidate(width: width, cost: total, rows: rows)
             }
         }
@@ -77,7 +82,7 @@ public enum VerseLayoutPlanner {
             guard head <= width else { break }
             guard tail <= turnoverWidth else {
                 let overflow = tail - turnoverWidth
-                if fallback == nil || overflow < fallback!.overflow {
+                if fallback.map({ overflow < $0.overflow }) ?? true {
                     fallback = (split, overflow)
                 }
                 continue
@@ -87,7 +92,7 @@ public enum VerseLayoutPlanner {
             if words.count - split == 1 { cost += lonelyWordPenalty }
             if tail < turnoverWidth * minimumTurnoverFraction { cost += shortTurnoverPenalty }
 
-            if bestBreak == nil || cost < bestBreak!.cost {
+            if bestBreak.map({ cost < $0.cost }) ?? true {
                 bestBreak = (split, cost)
             }
         }
@@ -106,9 +111,9 @@ public enum VerseLayoutPlanner {
         return ([0, chosen.index], chosen.cost)
     }
 
-    static func run(_ words: [Double], from: Int, to: Int, spaceWidth: Double) -> Double {
-        guard to > from else { return 0 }
-        let text = words[from..<to].reduce(0, +)
-        return text + Double(to - from - 1) * spaceWidth
+    static func run(_ words: [Double], from: Int, to endIndex: Int, spaceWidth: Double) -> Double {
+        guard endIndex > from else { return 0 }
+        let text = words[from..<endIndex].reduce(0, +)
+        return text + Double(endIndex - from - 1) * spaceWidth
     }
 }

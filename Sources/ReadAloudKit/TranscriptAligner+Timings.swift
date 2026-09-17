@@ -1,8 +1,8 @@
 import Foundation
 import ReadAlign
 
-public extension TranscriptAligner {
-    static func timings(
+extension TranscriptAligner {
+    public static func timings(
         for words: [SpokenWord],
         heard: [RecognizedWord],
         duration: TimeInterval

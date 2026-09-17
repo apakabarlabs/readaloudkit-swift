@@ -34,16 +34,18 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
 
         public var errorDescription: String? {
             switch self {
-            case .wordCountMismatch(let expected, let found):
+            case let .wordCountMismatch(expected, found):
                 return "The alignment lists \(found) words, the text has \(expected)."
-            case .wordMismatch(let index, let expected, let found):
-                return "Word \(index) is \"\(found)\" in the alignment and \"\(expected)\" in the text."
+
+            case let .wordMismatch(index, expected, found):
+                return
+                    "Word \(index) is \"\(found)\" in the alignment and \"\(expected)\" in the text."
             }
         }
     }
 
-    public static func decode(_ data: Data) throws -> NarrationAlignment {
-        try JSONDecoder().decode(NarrationAlignment.self, from: data)
+    public static func decode(_ data: Data) throws -> Self {
+        try JSONDecoder().decode(Self.self, from: data)
     }
 
     public func timings(
@@ -57,7 +59,11 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
         return try zip(spoken, words).enumerated().map { index, pair in
             let (word, measured) = pair
             guard word.text == measured.text, word.lineIndex == measured.line else {
-                throw AlignmentError.wordMismatch(index: index, expected: word.text, found: measured.text)
+                throw AlignmentError.wordMismatch(
+                    index: index,
+                    expected: word.text,
+                    found: measured.text
+                )
             }
             return WordTiming(word: word, start: measured.start, end: measured.end)
         }

@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ReadAloudKit
 
 struct VerseLayoutTests {
@@ -6,7 +7,8 @@ struct VerseLayoutTests {
     private let indent = 8.0
 
     private func breakLine(_ words: [Double], width: Double) -> [Int] {
-        VerseLayoutPlanner.breakLine(words: words, spaceWidth: space, width: width, indent: indent).starts
+        VerseLayoutPlanner.breakLine(words: words, spaceWidth: space, width: width, indent: indent)
+            .starts
     }
 
     @Test("a line that fits is never broken")

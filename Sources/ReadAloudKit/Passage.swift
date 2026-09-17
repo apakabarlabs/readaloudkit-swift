@@ -31,8 +31,8 @@ public struct SpokenWord: Identifiable, Sendable, Equatable {
 
     public var id: Int { indexInPassage }
 
-    public func movedToLine(_ lineIndex: Int) -> SpokenWord {
-        SpokenWord(
+    public func movedToLine(_ lineIndex: Int) -> Self {
+        Self(
             lineIndex: lineIndex,
             indexInPassage: indexInPassage,
             indexInLine: indexInLine,
