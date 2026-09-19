@@ -1,9 +1,17 @@
 import Foundation
 
+/// The chosen column and visual row starts for every line of verse.
 public struct VerseLayoutPlan: Sendable, Equatable {
+    /// Chosen column width in the caller's measurement units.
     public let columnWidth: Double
+    /// Per line, word indices at which visual rows begin.
+    ///
+    /// An empty line is represented by `[0]`, the sentinel for its single empty row.
     public let rowStarts: [[Int]]
 
+    /// Returns the word indices at which visual rows begin for one line.
+    ///
+    /// - Precondition: `index` exists in ``rowStarts``.
     public func rows(forLine index: Int) -> [Int] {
         precondition(
             rowStarts.indices.contains(index),
@@ -13,12 +21,20 @@ public struct VerseLayoutPlan: Sendable, Equatable {
     }
 }
 
+/// Plans line turnovers for a whole passage rather than letting each line wrap alone.
 public enum VerseLayoutPlanner {
     static let lonelyWordPenalty = 10_000.0
     static let minimumTurnoverFraction = 0.33
     static let shortTurnoverPenalty = 4_000.0
     static let narrowingPenaltyPerPoint = 3.0
 
+    /// Chooses a column width and balanced row starts for the supplied word widths.
+    ///
+    /// - Parameters:
+    ///   - lines: Nonnegative word widths, in order, for each printed line.
+    ///   - spaceWidth: Nonnegative width of the gap between adjacent words, in the same units.
+    ///   - candidateWidths: Positive column widths worth trying. An empty array yields width zero.
+    ///   - indent: Nonnegative indentation applied to continuation rows.
     public static func plan(
         lines: [[Double]],
         spaceWidth: Double,

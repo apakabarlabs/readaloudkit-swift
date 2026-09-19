@@ -1,16 +1,24 @@
 import Foundation
 
+/// Splits printed lines into the words a reader actually says.
+///
+/// Which marks may live inside a word is supplied by the language. A writing system
+/// without spaces needs another tokenizer rather than a different set of marks.
 public struct WordTokenizer: Sendable {
+    /// Marks that remain part of a word after the word has begun.
     public let interiorMarks: CharacterSet
 
+    /// Creates a tokenizer for a space-delimited writing system.
     public init(interiorMarks: CharacterSet) {
         self.interiorMarks = interiorMarks
     }
 
+    /// A Latin-script tokenizer that preserves apostrophes, elisions, and hyphens.
     public static let latinScript = Self(
         interiorMarks: CharacterSet(charactersIn: "'’-")
     )
 
+    /// Returns all spoken words with their positions in the passage.
     public func words(in passage: Passage) -> [SpokenWord] {
         var words: [SpokenWord] = []
         for (lineIndex, line) in passage.lines.enumerated() {
@@ -29,10 +37,12 @@ public struct WordTokenizer: Sendable {
         return words
     }
 
+    /// Splits every line into drawable word-and-punctuation segments.
     public func segments(in passage: Passage) -> [[LineSegment]] {
         passage.lines.map { segments(in: $0) }
     }
 
+    /// Splits one line while preserving every original character and space.
     public func segments(in line: String) -> [LineSegment] {
         let ranges = wordRanges(in: line)
         guard !ranges.isEmpty else {
@@ -99,6 +109,7 @@ public struct WordTokenizer: Sendable {
         return line.index(after: lastSpace)
     }
 
+    /// Returns the source ranges of words in one line.
     public func wordRanges(in line: String) -> [Range<String.Index>] {
         var ranges: [Range<String.Index>] = []
         var start: String.Index?

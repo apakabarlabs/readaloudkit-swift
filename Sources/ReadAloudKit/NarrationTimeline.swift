@@ -1,18 +1,36 @@
 import Foundation
 import ReadAlign
 
+/// The interval in which one word is spoken in a recording.
 public struct WordTiming: Sendable, Equatable {
+    /// The passage word occupying the interval.
     public let word: SpokenWord
+    /// Start time in seconds.
     public let start: TimeInterval
+    /// End time in seconds.
     public let end: TimeInterval
 }
 
+/// Builds and queries word-level timelines for recorded speech.
+///
+/// ``estimate(for:duration:tokenizer:weighting:)`` is fallback scaffolding for a
+/// recording without measured alignment. Prefer ``NarrationAlignment`` whenever
+/// measured word timings are available.
 public enum NarrationTimeline {
     private static let minimumSpeechFraction = 0.5
     private static let binarySearchDivisor = 2
+    /// Silence reserved before the first estimated word.
     public static let leadIn: TimeInterval = 0.35
+
+    /// Time reserved for a breath at each line break in an estimated timeline.
     public static let linePause: TimeInterval = 0.35
 
+    /// Estimates word timings by speech weight, reserving a pause at each line break.
+    ///
+    /// The default weighting is English-specific. An empty passage, nonpositive
+    /// duration, or weighting with no positive total produces an empty timeline.
+    ///
+    /// - Precondition: `weighting` returns a nonnegative weight for every word.
     public static func estimate(
         for passage: Passage,
         duration: TimeInterval,
@@ -45,6 +63,15 @@ public enum NarrationTimeline {
         return timings
     }
 
+    /// Extends each supplied word interval through its release and the silence that follows.
+    ///
+    /// After the scan encounters quiet, the end stops when sound resumes. If sound
+    /// continues without reaching quiet, the underlying hold limit or next interval
+    /// bounds the extension.
+    ///
+    /// - Preconditions:
+    ///   - `timings` are sorted in passage and non-overlapping time order.
+    ///   - `sampleRate` is positive.
     public static func heldThroughSilence(
         _ timings: [WordTiming],
         samples: [Float],
@@ -60,6 +87,15 @@ public enum NarrationTimeline {
         }
     }
 
+    /// Moves a line boundary out of speech and into the first resting silence in reach.
+    ///
+    /// Both sides of the boundary move together. If no genuine rest is found, the
+    /// measured boundary is preserved rather than replaced with a guess. The following
+    /// word keeps at least 0.04 seconds and its start moves with the shared boundary.
+    ///
+    /// - Preconditions:
+    ///   - `timings` are sorted in passage and non-overlapping time order.
+    ///   - `sampleRate` is positive.
     public static func settledBetweenLines(
         _ timings: [WordTiming],
         samples: [Float],
@@ -119,6 +155,9 @@ public enum NarrationTimeline {
         SilenceHold.energyFrames(of: samples, sampleRate: sampleRate)
     }
 
+    /// Extends each word toward the next word, without passing it or exceeding `limit`.
+    ///
+    /// - Precondition: `timings` are sorted in non-overlapping time order.
     public static func heldToTheNextWord(
         _ timings: [WordTiming],
         duration: TimeInterval,
@@ -135,6 +174,9 @@ public enum NarrationTimeline {
         }
     }
 
+    /// Returns the part of the recording occupied by one line.
+    ///
+    /// - Precondition: `timings` are in passage and non-overlapping time order.
     public static func range(
         ofLine lineIndex: Int,
         in timings: [WordTiming]
@@ -144,6 +186,9 @@ public enum NarrationTimeline {
         range(ofLines: lineIndex...lineIndex, in: timings)
     }
 
+    /// Returns the part of the recording occupied by a consecutive run of lines.
+    ///
+    /// - Precondition: `timings` are in passage and non-overlapping time order.
     public static func range(
         ofLines lines: ClosedRange<Int>,
         in timings: [WordTiming]
@@ -153,6 +198,12 @@ public enum NarrationTimeline {
         return start...end
     }
 
+    /// Returns the word at a fractional position through one line.
+    ///
+    /// This maps progress through an unaligned recording onto the shape of an aligned
+    /// one; it is an estimate of position, not a measurement of the reader's speech.
+    ///
+    /// - Precondition: `timings` are sorted in passage and non-overlapping time order.
     public static func word(
         atFraction fraction: Double,
         ofLine lineIndex: Int,
@@ -161,6 +212,9 @@ public enum NarrationTimeline {
         word(atFraction: fraction, ofLines: lineIndex...lineIndex, in: timings)
     }
 
+    /// Returns the word at a fractional position through a consecutive run of lines.
+    ///
+    /// - Precondition: `timings` are sorted in passage and non-overlapping time order.
     public static func word(
         atFraction fraction: Double,
         ofLines lines: ClosedRange<Int>,
@@ -177,6 +231,9 @@ public enum NarrationTimeline {
         return timings[index].word
     }
 
+    /// Returns the index of the word sounding at `time`.
+    ///
+    /// - Precondition: `timings` are sorted by non-overlapping start and end times.
     public static func index(at time: TimeInterval, in timings: [WordTiming]) -> Int? {
         guard let first = timings.first, let last = timings.last else { return nil }
         guard time >= first.start, time <= last.end else { return nil }
@@ -196,6 +253,12 @@ public enum NarrationTimeline {
         return nil
     }
 
+    /// Returns the word sounding at `time` when it belongs to `lines`.
+    ///
+    /// Constraining the result prevents a final playback tick from highlighting a word
+    /// in the following piece.
+    ///
+    /// - Precondition: `timings` are sorted in passage and non-overlapping time order.
     public static func word(
         at time: TimeInterval,
         ofLines lines: ClosedRange<Int>,

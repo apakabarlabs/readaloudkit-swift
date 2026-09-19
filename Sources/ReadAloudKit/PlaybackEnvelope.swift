@@ -1,4 +1,9 @@
+/// Shapes the gain at the edges of a playback buffer.
 public enum PlaybackEnvelope {
+    /// Returns the gain for one frame, applying the requested linear edge fades.
+    ///
+    /// A buffer shorter than two frames or a nonpositive fade length returns unity.
+    /// Frames outside the buffer are clamped to zero when an applicable fade is enabled.
     public static func gain(
         at frame: Int,
         frameCount: Int,

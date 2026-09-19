@@ -1,5 +1,6 @@
 import Foundation
 
+/// Reduces audio samples to normalized display amplitudes.
 public enum WaveformEnvelope {
     private static let defaultBarCount = 48
     private static let decibelsPerBel = 20.0
@@ -7,10 +8,15 @@ public enum WaveformEnvelope {
     private static let normalizationFloor = 50.0
     private static let normalizationRange = 45.0
 
+    /// Builds an envelope using the library's default number of bars.
     public static func make(from samples: [Float]) -> [Double] {
         make(from: samples, bars: defaultBarCount)
     }
 
+    /// Builds at most `bars` normalized amplitudes in the range zero through one.
+    ///
+    /// Empty samples or a nonpositive bar count produce an empty envelope. Each input
+    /// sample is a linear floating-point amplitude.
     public static func make(from samples: [Float], bars: Int) -> [Double] {
         guard !samples.isEmpty, bars > 0 else { return [] }
         let count = min(bars, samples.count)

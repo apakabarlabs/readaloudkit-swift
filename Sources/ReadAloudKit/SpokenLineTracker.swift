@@ -1,38 +1,69 @@
 import Foundation
 import ReadAlign
 
+/// How one printed word is presented while a reading is in progress.
 public enum WordReadingState: Sendable, Equatable {
+    /// A later word not yet reached.
     case ahead
+    /// A near miss aligned with this printed word.
     case close
+    /// The next word expected before an attempt begins.
     case expected
+    /// A printed word not faithfully heard.
     case missed
+    /// A printed word faithfully heard.
     case said
 }
 
+/// The persisted result of checking one printed word.
+///
+/// These raw spellings are part of the stored-data contract.
 public enum WordCheck: String, Codable, Sendable, Equatable {
+    /// A near miss was aligned with the word.
     case close
+    /// The word was faithfully heard.
     case correct
+    /// No faithful or near matching word was heard.
     case wrong
 }
 
+/// A printed word paired with the result of one reading attempt.
 public struct WordAttempt: Sendable, Equatable {
+    /// Printed spelling from the passage.
     public let word: String
+    /// Result assigned to the printed word.
     public let check: WordCheck
 
+    /// Creates one printable attempt result.
     public init(word: String, check: WordCheck) {
         self.word = word
         self.check = check
     }
 }
 
+/// Checks a complete spoken attempt against one or more printed lines.
+///
+/// The whole transcript is aligned at once so one misrecognized word does not shift
+/// every word that follows it.
 public struct SpokenLineTracker: Sendable {
+    /// The minimum similarity used to align a near miss with a printed word.
+    ///
+    /// This threshold decides which words are compared. A word is credited only when
+    /// its spelling is faithful or an explicit recognizer quirk permits it.
     public static let closeSimilarityThreshold = 0.6
 
+    /// The result for every expected word in one attempt.
     public struct Progress: Sendable, Equatable {
+        /// One result per expected word, in passage order.
         public let checks: [WordCheck]
 
+        /// Whether every expected word was said faithfully.
         public var isComplete: Bool { !checks.isEmpty && checks.allSatisfy { $0 == .correct } }
+
+        /// Whether no expected word could be credited or aligned as a near miss.
         public var isAllWrong: Bool { !checks.isEmpty && checks.allSatisfy { $0 == .wrong } }
+
+        /// The display state corresponding to each check.
         public var wordStates: [WordReadingState] {
             checks.map { check in
                 switch check {
@@ -43,15 +74,22 @@ public struct SpokenLineTracker: Sendable {
             }
         }
 
+        /// Creates progress from ordered word checks.
         public init(checks: [WordCheck]) {
             self.checks = checks
         }
     }
 
+    /// Printed words in passage order.
     public let expected: [String]
+
+    /// Model-specific transcription allowances applied while checking.
     public let quirks: RecognizerQuirks
+
+    /// The number of expected words in each printed line.
     public let lineLengths: [Int]
 
+    /// Creates a tracker for one printed line.
     public init(
         line: String,
         quirks: RecognizerQuirks = .none,
@@ -60,6 +98,7 @@ public struct SpokenLineTracker: Sendable {
         self.init(lines: [line], quirks: quirks, tokenizer: tokenizer)
     }
 
+    /// Creates a tracker that checks all printed lines as one continuous attempt.
     public init(
         lines: [String],
         quirks: RecognizerQuirks = .none,
@@ -71,6 +110,7 @@ public struct SpokenLineTracker: Sendable {
         self.quirks = quirks
     }
 
+    /// Counts spoken words in each line using `tokenizer`.
     public static func wordsPerLine(
         of lines: [String],
         tokenizer: WordTokenizer = .latinScript
@@ -80,6 +120,7 @@ public struct SpokenLineTracker: Sendable {
         lines.map { tokenizer.wordRanges(in: $0).count }
     }
 
+    /// Returns the part of a passage-wide state array belonging to one line.
     public static func wordStates(
         _ states: [WordReadingState],
         forLineAt index: Int,
@@ -92,15 +133,20 @@ public struct SpokenLineTracker: Sendable {
         return Array(states[start..<end])
     }
 
+    /// Returns the part of a passage-wide state array belonging to one tracked line.
     public func wordStates(_ states: [WordReadingState], forLineAt index: Int) -> [WordReadingState]
     {
         Self.wordStates(states, forLineAt: index, wordsPerLine: lineLengths)
     }
 
+    /// States shown before an attempt: the first word expected and later words ahead.
     public var untriedWordStates: [WordReadingState] {
         expected.indices.map { $0 == 0 ? .expected : .ahead }
     }
 
+    /// Checks a complete recognized transcript against the tracked printed words.
+    ///
+    /// Extra words outside the best alignment do not count against the printed words.
     public func progress(
         heard transcript: String,
         tokenizer: WordTokenizer = .latinScript
@@ -117,12 +163,17 @@ public struct SpokenLineTracker: Sendable {
         return Progress(checks: checks)
     }
 
+    /// Pairs the original printed spellings with their check results.
     public func attempts(in progress: Progress) -> [WordAttempt] {
         zip(expected, progress.checks).map { word, check in
             WordAttempt(word: word, check: check)
         }
     }
 
+    /// Reports whether a heard spelling faithfully represents a written word.
+    ///
+    /// Case and punctuation are ignored. A vowel omitted at an apostrophe may be
+    /// restored, but other changes remain different words.
     public static func isFaithful(_ heard: String, to expected: String) -> Bool {
         let said = TranscriptAligner.normalize(heard)
         return said == TranscriptAligner.normalize(expected) || writesOut(said, elidedIn: expected)
