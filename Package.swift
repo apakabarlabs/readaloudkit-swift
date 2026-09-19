@@ -14,7 +14,8 @@ let package = Package(
     targets: [
         .target(
             name: "ReadAloudKit",
-            dependencies: [.product(name: "ReadAlign", package: "readalign-swift")]),
+            dependencies: [.product(name: "ReadAlign", package: "readalign-swift")]
+        ),
         .testTarget(name: "ReadAloudKitTests", dependencies: ["ReadAloudKit"])
     ]
 )
