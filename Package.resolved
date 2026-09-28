@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apakabarlabs/readalign-swift",
       "state" : {
-        "revision" : "d568270ad3d1165fcdbc822c1ca32d83d8f1eb02",
-        "version" : "0.13.1"
+        "revision" : "bdc9f27e095ab115040b0aad918cfea838b23d2f",
+        "version" : "0.17.1"
       }
     },
     {
