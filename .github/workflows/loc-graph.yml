@@ -16,4 +16,3 @@ jobs:
         with:
           fetch-depth: 0
       - uses: botforge-pro/loc-graph-action@main
-

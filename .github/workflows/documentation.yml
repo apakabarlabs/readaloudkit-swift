@@ -31,4 +31,3 @@ jobs:
       - name: Deploy documentation
         id: deployment
         uses: actions/deploy-pages@v5
-
