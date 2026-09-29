@@ -6,7 +6,8 @@ import Foundation
 /// without spaces needs another tokenizer rather than a different set of marks.
 ///
 /// A character, as Unicode clusters it, is a letter or a space by its base: the
-/// scalar its combining marks sit on, past any sign prepended to it.
+/// scalar its combining marks sit on, past any sign prepended to it. A private-use
+/// character is never a letter, whatever a font draws for it.
 public struct WordTokenizer: Sendable {
     /// Marks that remain part of a word after the word has begun.
     public let interiorMarks: CharacterSet

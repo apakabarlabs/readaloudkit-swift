@@ -101,6 +101,8 @@
   same ones. Swift keeps only the runners and the tests about the shape of its API.
   Every case pins its whole result, and a key no runner reads fails the run.
 - `VerseLayoutPlanner.plan` no longer carries a branch no input can reach.
+- Cases hold every port to reading a private-use character, in any plane and under
+  any combining mark, as no letter.
 
 ## 0.2.0
 
