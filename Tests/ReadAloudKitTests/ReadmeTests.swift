@@ -12,12 +12,30 @@ private struct Work: Decodable {
         case interiorMarks = "interior_marks"
     }
 
-    static let sonnets = #"{"interior_marks": "'’-", "elisions": {"tatter’d": "tattered"}}"#
+    static func sonnets() throws -> Self {
+        let data = #"{"interior_marks": "'’-", "elisions": {"tatter’d": "tattered"}}"#
+        return try JSONDecoder().decode(Self.self, from: Data(data.utf8))
+    }
+}
+
+private struct Document: Sendable, CustomTestStringConvertible {
+    let path: String
+    let runBy: String
+
+    var testDescription: String { path }
+
+    static let all = [
+        Self(path: "README.md", runBy: "saidEveryWord"),
+        Self(
+            path: "Sources/ReadAloudKit/ReadAloudKit.docc/ReadAloudKit.md",
+            runBy: "completedReading"
+        )
+    ]
 }
 
 struct ReadmeTests {
     private func saidEveryWord(of lines: [String], in transcript: String) throws -> Bool {
-        let work = try JSONDecoder().decode(Work.self, from: Data(Work.sonnets.utf8))
+        let work = try Work.sonnets()
         let quirks = RecognizerQuirks.none
         let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
         let elisions = Elisions(fullForms: work.elisions)
@@ -31,24 +49,46 @@ struct ReadmeTests {
         return saidEveryWord
     }
 
-    @Test("every Swift example in the README is code these tests run")
-    func readmeShowsOnlyCodeTheTestsRun() throws {
+    private func completedReading() throws -> Bool {
+        let work = try Work.sonnets()
+        let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+        let elisions = Elisions(fullForms: work.elisions)
+        let tracker = SpokenLineTracker(
+            lines: ["Will be a tatter’d weed", "of small worth held"],
+            elisions: elisions,
+            tokenizer: tokenizer
+        )
+        let progress = tracker.progress(heard: "will be a tattered weed of small worth held")
+        let completed = progress.isComplete
+        return completed
+    }
+
+    @Test(
+        "every Swift example in a document is code inside the function a test runs for it",
+        arguments: Document.all
+    )
+    fileprivate func documentShowsOnlyCodeTheTestsRun(_ document: Document) throws {
         let here = URL(fileURLWithPath: #filePath)
-        let readme = here.deletingLastPathComponent()
+        let root = here.deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("README.md")
+        let shown = root.appendingPathComponent(document.path)
         let examples = Self.fencedBlocks(
-            in: try String(contentsOf: readme, encoding: .utf8),
+            in: try String(contentsOf: shown, encoding: .utf8),
             language: "swift"
         )
-        let run = Self.trimmedLines(of: try String(contentsOf: here, encoding: .utf8))
+        let source = try String(contentsOf: here, encoding: .utf8)
+        let body = try #require(
+            Self.body(of: document.runBy, in: source),
+            "\(document.runBy) is not a function of this file"
+        )
 
         #expect(!examples.isEmpty)
         for paragraph in examples.flatMap(Self.paragraphs) {
+            let shown = paragraph.joined(separator: "\n")
             #expect(
-                Self.contains(run, paragraph),
-                "the README shows code no test runs:\n\(paragraph.joined(separator: "\n"))"
+                Self.contains(body, paragraph),
+                "\(document.path) shows code \(document.runBy) does not run:\n\(shown)"
             )
         }
     }
@@ -61,9 +101,24 @@ struct ReadmeTests {
         #expect(try !saidEveryWord(of: lines, in: "will be a tattered weed of worth held"))
     }
 
+    @Test("the DocC reading check completes a reading said whole")
+    func docCUsageCompletes() throws {
+        #expect(try completedReading())
+    }
+
     private static func trimmedLines(of text: String) -> [String] {
         text.split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    private static func body(of function: String, in source: String) -> [String]? {
+        let lines = source.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let signature = "    private func \(function)("
+        guard let start = lines.firstIndex(where: { $0.hasPrefix(signature) }),
+            let open = lines[start...].firstIndex(where: { $0.hasSuffix("{") }),
+            let close = lines[open...].firstIndex(of: "    }")
+        else { return nil }
+        return lines[(open + 1)..<close].map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     private static func fencedBlocks(in markdown: String, language: String) -> [[String]] {
