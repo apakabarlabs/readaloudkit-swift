@@ -9,7 +9,9 @@
   said, and spellings that normalize alike are merged.
 - `PublishedAlignment`, an alignment and the version the server published it under.
 - `NotUTF8`: a served alignment or hearing table is read as UTF-8, with or without a
-  byte order mark, and text in any other encoding is refused with this error.
+  byte order mark, and text in any other encoding is refused with this error. A second
+  byte order mark, a lone surrogate escaped in any string, and a control character
+  written raw inside a string are refused with a `DecodingError`, as JSON forbids them.
 
 ### Changed
 

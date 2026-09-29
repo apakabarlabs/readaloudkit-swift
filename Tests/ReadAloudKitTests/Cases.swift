@@ -52,6 +52,8 @@ enum Cases {
             switch encoding ?? "utf-8" {
             case "utf-8": text.data(using: .utf8)
             case "utf-8-bom": text.data(using: .utf8).map { utf8ByteOrderMark + $0 }
+            case "utf-8-bom-twice":
+                text.data(using: .utf8).map { utf8ByteOrderMark + utf8ByteOrderMark + $0 }
             case "utf-16le": text.data(using: .utf16LittleEndian)
             case "utf-16le-bom":
                 text.data(using: .utf16LittleEndian).map { utf16LittleEndianByteOrderMark + $0 }
