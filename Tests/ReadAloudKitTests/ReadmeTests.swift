@@ -4,32 +4,33 @@ import Testing
 @testable import ReadAloudKit
 
 struct ReadmeTests {
-    private static let usage = """
-        let tracker = SpokenLineTracker(lines: printedLines, quirks: quirks, tokenizer: .latinScript)
-        let saidEveryWord = tracker.progress(heard: transcript).isComplete
-        """
-
-    private func saidEveryWord(of printedLines: [String], in transcript: String) -> Bool {
+    private func saidEveryWord(of lines: [String], in transcript: String) -> Bool {
         let quirks = RecognizerQuirks.none
-        let tracker = SpokenLineTracker(
-            lines: printedLines,
-            quirks: quirks,
-            tokenizer: .latinScript
-        )
+        let tracker = SpokenLineTracker(lines: lines, quirks: quirks, tokenizer: .latinScript)
         let saidEveryWord = tracker.progress(heard: transcript).isComplete
         return saidEveryWord
     }
 
-    @Test("the README shows the completeness check these tests run")
-    func readmeShowsTheCheckedUsage() throws {
-        let readme = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
+    @Test("every Swift example in the README is code these tests run")
+    func readmeShowsOnlyCodeTheTestsRun() throws {
+        let here = URL(fileURLWithPath: #filePath)
+        let readme = here.deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("README.md")
-        let text = try String(contentsOf: readme, encoding: .utf8)
+        let examples = Self.fencedBlocks(
+            in: try String(contentsOf: readme, encoding: .utf8),
+            language: "swift"
+        )
+        let run = Self.trimmedLines(of: try String(contentsOf: here, encoding: .utf8))
 
-        #expect(text.contains("```swift\n\(Self.usage)\n```"))
+        #expect(!examples.isEmpty)
+        for paragraph in examples.flatMap(Self.paragraphs) {
+            #expect(
+                Self.contains(run, paragraph),
+                "the README shows code no test runs:\n\(paragraph.joined(separator: "\n"))"
+            )
+        }
     }
 
     @Test("the README's completeness check tells a dropped word from a reading said whole")
@@ -38,5 +39,40 @@ struct ReadmeTests {
 
         #expect(saidEveryWord(of: lines, in: "From fairest creatures we desire increase"))
         #expect(!saidEveryWord(of: lines, in: "From fairest creatures desire increase"))
+    }
+
+    private static func trimmedLines(of text: String) -> [String] {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    private static func fencedBlocks(in markdown: String, language: String) -> [[String]] {
+        var blocks: [[String]] = []
+        var open: [String]?
+        for line in trimmedLines(of: markdown) {
+            if var block = open {
+                if line == "```" {
+                    blocks.append(block)
+                    open = nil
+                } else {
+                    block.append(line)
+                    open = block
+                }
+            } else if line == "```\(language)" {
+                open = []
+            }
+        }
+        return blocks
+    }
+
+    private static func paragraphs(_ block: [String]) -> [[String]] {
+        block.split(separator: "", omittingEmptySubsequences: true).map(Array.init)
+    }
+
+    private static func contains(_ lines: [String], _ run: [String]) -> Bool {
+        guard run.count <= lines.count else { return false }
+        return (0...(lines.count - run.count)).contains { start in
+            Array(lines[start..<(start + run.count)]) == run
+        }
     }
 }

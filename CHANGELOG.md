@@ -108,6 +108,9 @@
   same ones. Swift keeps only the runners and the tests about the shape of its API.
   Every case pins its whole result, and a key no runner reads fails the run.
 - `VerseLayoutPlanner.plan` no longer carries a branch no input can reach.
+- `ReadmeTests` reads every Swift block of the README and fails unless each paragraph of
+  it is, line for line, code the test runs; it used to compare the README with a copy
+  of the example that nothing ran.
 - Every case that splits text names the `interior_marks` of its language, and a case
   without them cannot be read: no runner falls back to the Latin-script tokenizer.
 - Cases hold every port to reading a private-use character, in any plane and under
