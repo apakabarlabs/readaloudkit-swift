@@ -22,6 +22,7 @@ func expectTimings(_ actual: [WordTiming], equal expected: [[TimeInterval]], in 
 struct SettleCase: NamedCase {
     let name: String
     let lines: [String]
+    let interiorMarks: String
     let sampleCount: Int
     let level: Float
     let loud: [[Int]]
@@ -31,6 +32,7 @@ struct SettleCase: NamedCase {
 
     private enum CodingKeys: String, CodingKey {
         case name, lines, level, loud, rate, marks, timings
+        case interiorMarks = "interior_marks"
         case sampleCount = "sample_count"
     }
 
@@ -43,7 +45,8 @@ struct SettleCase: NamedCase {
     }
 
     var marked: [WordTiming] {
-        let words = WordTokenizer.latinScript.words(in: Passage(lines: lines))
+        let tokenizer = Cases.tokenizer(interiorMarks: interiorMarks)
+        let words = tokenizer.words(in: Passage(lines: lines))
         return zip(words, marks).map { WordTiming(word: $0, start: $1[0], end: $1[1]) }
     }
 }

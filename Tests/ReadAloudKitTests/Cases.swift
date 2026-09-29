@@ -46,9 +46,8 @@ enum Cases {
         return []
     }
 
-    static func tokenizer(interiorMarks: String?) -> WordTokenizer {
-        interiorMarks.map { WordTokenizer(interiorMarks: CharacterSet(charactersIn: $0)) }
-            ?? .latinScript
+    static func tokenizer(interiorMarks: String) -> WordTokenizer {
+        WordTokenizer(interiorMarks: CharacterSet(charactersIn: interiorMarks))
     }
 
     static func quirks(_ allowances: [String: [AllowanceEntry]]?) -> RecognizerQuirks {

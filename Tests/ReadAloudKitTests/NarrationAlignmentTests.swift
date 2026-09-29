@@ -73,6 +73,7 @@ struct WordMismatch: Codable, Sendable {
 struct TimingsCase: NamedCase {
     let name: String
     let lines: [String]
+    let interiorMarks: String
     let words: [NarrationAlignment.Word]
     let timings: [ExpectedTiming]?
     let wordCountMismatch: CountMismatch?
@@ -80,6 +81,7 @@ struct TimingsCase: NamedCase {
 
     private enum CodingKeys: String, CodingKey {
         case name, lines, words, timings
+        case interiorMarks = "interior_marks"
         case wordCountMismatch = "word_count_mismatch"
         case wordMismatch = "word_mismatch"
     }
@@ -122,13 +124,14 @@ struct NarrationAlignmentTests {
     func marriesTimesToWords(_ example: TimingsCase) throws {
         let alignment = NarrationAlignment(piece: "1", duration: 10, words: example.words)
         let passage = Passage(lines: example.lines)
+        let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
         if let refusal = example.refusal {
             #expect(throws: refusal) {
-                try alignment.timings(for: passage, tokenizer: .latinScript)
+                try alignment.timings(for: passage, tokenizer: tokenizer)
             }
             return
         }
-        let timings = try alignment.timings(for: passage, tokenizer: .latinScript)
+        let timings = try alignment.timings(for: passage, tokenizer: tokenizer)
         let expected = try #require(example.timings, "a fitting case pins its timings")
         let actual = timings.map { timing in
             ExpectedTiming(

@@ -17,7 +17,7 @@ struct TrackerCase: NamedCase {
     let name: String
     let lines: [String]
     let quirks: [String: [AllowanceEntry]]?
-    let interiorMarks: String?
+    let interiorMarks: String
     let lineLengths: [Int]
     let heard: String?
     let checks: [WordCheck]?

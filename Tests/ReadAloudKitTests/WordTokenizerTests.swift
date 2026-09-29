@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import Yams
 
 @testable import ReadAloudKit
 
@@ -14,7 +15,7 @@ struct TokenizerCases: Codable {
 struct WordsCase: NamedCase {
     let name: String
     let line: String
-    let interiorMarks: String?
+    let interiorMarks: String
     let words: [String]
 
     private enum CodingKeys: String, CodingKey {
@@ -44,18 +45,26 @@ struct ExpectedSegment: Codable, Sendable {
 struct SegmentsCase: NamedCase {
     let name: String
     let line: String
+    let interiorMarks: String
     let segments: [ExpectedSegment]
+
+    private enum CodingKeys: String, CodingKey {
+        case name, line, segments
+        case interiorMarks = "interior_marks"
+    }
 }
 
 struct PassageCase: NamedCase {
     let name: String
     let lines: [String]
+    let interiorMarks: String
     let words: [String]
     let lineOfEach: [Int]
     let indexInLine: [Int]
 
     private enum CodingKeys: String, CodingKey {
         case name, lines, words
+        case interiorMarks = "interior_marks"
         case lineOfEach = "line_of_each"
         case indexInLine = "index_in_line"
     }
@@ -72,7 +81,8 @@ struct WordTokenizerTests {
 
     @Test(arguments: TokenizerCases.all.segments)
     func cutsTheSegments(_ example: SegmentsCase) {
-        let segments = WordTokenizer.latinScript.segments(in: example.line)
+        let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
+        let segments = tokenizer.segments(in: example.line)
 
         #expect(segments == example.segments.map(\.segment))
         #expect(segments.map(\.text).joined() == example.line)
@@ -80,11 +90,21 @@ struct WordTokenizerTests {
 
     @Test(arguments: TokenizerCases.all.passage)
     func numbersThePassage(_ example: PassageCase) {
-        let spoken = WordTokenizer.latinScript.words(in: Passage(lines: example.lines))
+        let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
+        let spoken = tokenizer.words(in: Passage(lines: example.lines))
 
         #expect(spoken.map(\.text) == example.words)
         #expect(spoken.map(\.indexInPassage) == Array(example.words.indices))
         #expect(spoken.map(\.lineIndex) == example.lineOfEach)
         #expect(spoken.map(\.indexInLine) == example.indexInLine)
+    }
+
+    @Test("a case that does not name its interior marks cannot be read")
+    func refusesACaseWithoutInteriorMarks() {
+        let unnamed = #"{name: "no language", line: "beauty's rose", words: ["beauty's", "rose"]}"#
+
+        #expect(throws: DecodingError.self) {
+            try YAMLDecoder().decode(WordsCase.self, from: unnamed)
+        }
     }
 }
