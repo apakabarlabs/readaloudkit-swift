@@ -50,7 +50,7 @@ struct SpokenPieceTests {
 
     @Test("a tracker keeps the elisions it was made with")
     func keepsItsElisions() {
-        let listed = Elisions(fullForms: ["tatter’d": "tattered"])
+        let listed = Elisions(fullForms: ["tatter’d": ["tattered"]])
         let tracker = SpokenLineTracker(
             line: "a tatter’d weed",
             quirks: .none,

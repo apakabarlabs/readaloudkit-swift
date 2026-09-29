@@ -38,7 +38,7 @@ let saidEveryWord = tracker.progress(heard: transcript).isComplete
 ```
 
 `work` stands for the data that comes with the work, not with this library: the marks
-its script keeps inside a word, such as an apostrophe or a hyphen, and the full form of
+its script keeps inside a word, such as an apostrophe or a hyphen, and the full forms of
 each elided spelling it prints, such as `tattered` for `tatter’d`. Nothing here knows a
 language or picks one for you, and an elision the work does not list is not restored.
 

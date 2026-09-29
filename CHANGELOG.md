@@ -4,8 +4,9 @@
 
 ### Added
 
-- `Elisions`, the full form of each elided spelling a work prints, taken from the
-  work's data.
+- `Elisions`, the full forms of each elided spelling a work prints, taken from the
+  work's data. A spelling may stand for several full forms, any of which counts as
+  said, and spellings that normalize alike are merged.
 - `PublishedAlignment`, an alignment and the version the server published it under.
 
 ### Changed
@@ -99,7 +100,7 @@
   ```swift
   SpokenLineTracker.isFaithful(
       "tattered", to: "tatter’d",
-      elisions: Elisions(fullForms: ["tatter’d": "tattered"])
+      elisions: Elisions(fullForms: ["tatter’d": ["tattered"]])
   )
   ```
 

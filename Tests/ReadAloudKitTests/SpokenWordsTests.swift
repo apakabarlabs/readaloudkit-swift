@@ -27,7 +27,7 @@ struct SpokenWordsCase: NamedCase {
     let expected: [String]
     let heard: [String]
     let quirks: [String: [AllowanceEntry]]?
-    let elisions: [String: String]?
+    let elisions: [String: [String]]?
     let matches: [ExpectedMatch]
     let faithful: Set<Int>
 }
@@ -36,7 +36,7 @@ struct FaithfulCase: NamedCase {
     let name: String
     let heard: String
     let written: String
-    let elisions: [String: String]?
+    let elisions: [String: [String]]?
     let faithful: Bool
 }
 

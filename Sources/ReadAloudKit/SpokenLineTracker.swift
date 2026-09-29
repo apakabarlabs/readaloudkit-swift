@@ -191,6 +191,6 @@ public struct SpokenLineTracker: Sendable {
     ) -> Bool {
         let said = TranscriptAligner.normalize(heard)
         return said == TranscriptAligner.normalize(expected)
-            || said == elisions.fullForm(of: expected)
+            || elisions.fullForms(of: expected).contains(said)
     }
 }

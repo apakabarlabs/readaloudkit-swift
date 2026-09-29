@@ -20,7 +20,7 @@ struct TrackerCase: NamedCase {
     let lines: [String]
     let quirks: [String: [AllowanceEntry]]?
     let interiorMarks: String
-    let elisions: [String: String]?
+    let elisions: [String: [String]]?
     let lineLengths: [Int]
     let heard: String?
     let checks: [WordCheck]?

@@ -75,7 +75,7 @@ enum Cases {
 
     static let sonnetsTokenizer = tokenizer(interiorMarks: "'’-")
 
-    static func elisions(_ fullForms: [String: String]?) -> Elisions {
+    static func elisions(_ fullForms: [String: [String]]?) -> Elisions {
         fullForms.map(Elisions.init(fullForms:)) ?? .none
     }
 

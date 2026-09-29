@@ -47,7 +47,7 @@ public enum SpokenWords {
             threshold: threshold
         ) { written, said, preceding in
             quirks.allows(said, forWritten: written, after: preceding)
-                || elisions.fullForm(of: written) == TranscriptAligner.normalize(said)
+                || elisions.fullForms(of: written).contains(TranscriptAligner.normalize(said))
         }
         var faithful: Set<Int> = []
         for (index, match) in matches.enumerated() {

@@ -5,7 +5,7 @@ import Testing
 
 private struct Work: Decodable {
     let interiorMarks: String
-    let elisions: [String: String]
+    let elisions: [String: [String]]
 
     private enum CodingKeys: String, CodingKey {
         case elisions
@@ -13,7 +13,7 @@ private struct Work: Decodable {
     }
 
     static func sonnets() throws -> Self {
-        let data = #"{"interior_marks": "'’-", "elisions": {"tatter’d": "tattered"}}"#
+        let data = #"{"interior_marks": "'’-", "elisions": {"tatter’d": ["tattered"]}}"#
         return try JSONDecoder().decode(Self.self, from: Data(data.utf8))
     }
 }
