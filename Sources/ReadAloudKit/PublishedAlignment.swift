@@ -22,6 +22,10 @@ public struct PublishedAlignment: Decodable, Sendable, Equatable {
     /// its values; which one is not promised and may differ between ports. The document is
     /// read as UTF-8, with or without a byte order mark.
     ///
+    /// This rests on a contract with the server: it may add a field, but never one that
+    /// changes the meaning of a field read here, and it never renames or drops a field.
+    /// A renamed `recording` would read as no recording.
+    ///
     /// - Throws: ``NotUTF8`` for text in another encoding, `DecodingError` for JSON of
     ///   another shape, or ``NarrationAlignment/TimingError``.
     public static func decode(_ data: Data) throws -> Self {

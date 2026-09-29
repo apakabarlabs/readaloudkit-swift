@@ -82,6 +82,11 @@ public struct RecognizerQuirks: Sendable {
     /// may differ between ports. The table is read as UTF-8, with or without a byte order
     /// mark.
     ///
+    /// This rests on a contract with the server: it may add a field, but never one that
+    /// changes the meaning of a field read here, such as one that narrows an allowance,
+    /// and it never renames or drops a field. An allowance whose `after` is misspelt is
+    /// read as an allowance with no `after`, allowed after any word.
+    ///
     /// - Throws: ``NotUTF8`` for text in another encoding, `DecodingError` for another
     ///   shape, or ``WrongBuild``.
     public static func decode(_ data: Data, build: String) throws -> Self {

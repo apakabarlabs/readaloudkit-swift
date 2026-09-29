@@ -70,6 +70,12 @@ already installed cannot learn a field the server adds later, so such a field mu
 stop it. A key repeated within one object keeps one of its values; which one is not
 promised and may differ between ports.
 
+That leniency rests on a contract with the server. It may add a field, but never one
+that changes the meaning of a field the library already reads, such as a field that
+narrows an allowance, and it never renames or drops a field. The library cannot tell a
+break of that contract from an added field: an allowance whose `after` is misspelt is
+read as an allowance with no `after`, allowed after any word.
+
 ## The measure belongs here
 
 A tool that hears our own recordings back before they ship uses this same code,
