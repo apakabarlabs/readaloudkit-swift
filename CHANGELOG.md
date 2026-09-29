@@ -8,11 +8,6 @@
   work's data.
 - `PublishedAlignment`, an alignment and the version the server published it under.
 
-### Removed
-
-- `WordTokenizer.latinScript`. The marks a script keeps inside a word come with the
-  work's data: `WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))`.
-
 ### Changed
 
 - `NarrationAlignment.sonnet: Int` is now `piece: String`, the field and type the
@@ -153,6 +148,14 @@
   still sit on another line.
 - ReadAlign is required from 0.17.0; nothing this package calls changed between
   0.13.1 and 0.17.1.
+- Where a character ends and whether it is a letter follow the Unicode data of the
+  system the code runs on; the documentation no longer suggests every platform cuts
+  every character alike.
+
+### Removed
+
+- `WordTokenizer.latinScript`. The marks a script keeps inside a word come with the
+  work's data: `WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))`.
 
 ### Fixed
 
@@ -160,29 +163,11 @@
   combining marks sit on, rather than by its first scalar. A sign prepended to a letter,
   such as the Arabic number sign, no longer cuts that letter out of its word, and one
   prepended to a space leaves it a space.
-- `WaveformEnvelope.make(from:bars:)` finds where each bar starts without multiplying
-  the bar by the sample count in `Int`, which trapped once that product outgrew it. The
-  Kotlin port, where `Int` has 32 bits, failed on a recording of 46,342 samples asked for
-  as many bars; cases now hold both ports there.
+- `WaveformEnvelope.make(from:bars:)` no longer traps when the number of bars times the
+  number of samples outgrows `Int`.
 - The README showed completeness as `faithful.count == matches.count`, which is true
   when a written word was not heard at all, because such a word makes no match. It
-  now shows `SpokenLineTracker.progress(heard:).isComplete`, and a test holds the
-  README to the usage it runs.
-
-### Internal
-
-- The cases the tests hold the library to are YAML under
-  `Tests/ReadAloudKitTests/Resources/`, one file per subject, so every port reads the
-  same ones. Swift keeps only the runners and the tests about the shape of its API.
-  Every case pins its whole result, and a key no runner reads fails the run.
-- `VerseLayoutPlanner.plan` no longer carries a branch no input can reach.
-- `ReadmeTests` reads every Swift block of the README and fails unless each paragraph of
-  it is, line for line, code the test runs; it used to compare the README with a copy
-  of the example that nothing ran.
-- Every case that splits text names the `interior_marks` of its language, and a case
-  without them cannot be read: no runner falls back to the Latin-script tokenizer.
-- Cases hold every port to reading a private-use character, in any plane and under
-  any combining mark, as no letter.
+  now shows `SpokenLineTracker.progress(heard:).isComplete`.
 
 ## 0.2.0
 
