@@ -7,22 +7,33 @@ import Yams
 enum Cases {
     static let within = 0.000_000_001
 
+    struct UnreadKeys: Error, CustomStringConvertible {
+        let keys: [String]
+        var description: String { "keys no case reads: \(keys.joined(separator: ", "))" }
+    }
+
     static func loadRefusingUnreadKeys<T: Codable>(_ name: String, as type: T.Type = T.self) -> T {
         do {
             guard let url = Bundle.module.url(forResource: name, withExtension: nil) else {
                 fatalError("\(name) is not among the test resources")
             }
             let text = try String(contentsOf: url, encoding: .utf8)
-            let decoded = try YAMLDecoder().decode(T.self, from: text)
-            let read = try JSONSerialization.jsonObject(with: JSONEncoder().encode(decoded))
-            let unread = unreadKeys(in: try Yams.load(yaml: text), readAs: read, at: name)
-            guard unread.isEmpty else {
-                fatalError("\(name) has keys no case reads: \(unread.joined(separator: ", "))")
-            }
-            return decoded
+            return try decodeRefusingUnreadKeys(text, at: name)
         } catch {
             fatalError("\(name) cannot be read: \(error)")
         }
+    }
+
+    static func decodeRefusingUnreadKeys<T: Codable>(
+        _ text: String,
+        at name: String,
+        as type: T.Type = T.self
+    ) throws -> T {
+        let decoded = try YAMLDecoder().decode(T.self, from: text)
+        let read = try JSONSerialization.jsonObject(with: JSONEncoder().encode(decoded))
+        let unread = unreadKeys(in: try Yams.load(yaml: text), readAs: read, at: name)
+        guard unread.isEmpty else { throw UnreadKeys(keys: unread) }
+        return decoded
     }
 
     static func served(_ name: String) throws -> Data {
@@ -86,16 +97,16 @@ struct AllowanceEntry: Codable, Sendable {
     }
 
     init(from decoder: Decoder) throws {
-        if let spelling = try? decoder.singleValueContainer().decode(String.self) {
-            heard = spelling
+        do {
+            heard = try decoder.singleValueContainer().decode(String.self)
             after = nil
             writtenAsPair = false
-            return
+        } catch DecodingError.typeMismatch {
+            let pair = try decoder.container(keyedBy: CodingKeys.self)
+            heard = try pair.decode(String.self, forKey: .heard)
+            after = try pair.decodeIfPresent(String.self, forKey: .after)
+            writtenAsPair = true
         }
-        let pair = try decoder.container(keyedBy: CodingKeys.self)
-        heard = try pair.decode(String.self, forKey: .heard)
-        after = try pair.decodeIfPresent(String.self, forKey: .after)
-        writtenAsPair = true
     }
 
     func encode(to encoder: Encoder) throws {
