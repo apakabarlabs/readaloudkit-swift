@@ -15,6 +15,7 @@ let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.int
 let elisions = Elisions(fullForms: work.elisions)
 let tracker = SpokenLineTracker(
     lines: ["Will be a tatter’d weed", "of small worth held"],
+    quirks: .none,
     elisions: elisions,
     tokenizer: tokenizer
 )
@@ -24,7 +25,8 @@ let completed = progress.isComplete
 
 `work` stands for the work's data: the marks its script keeps inside a word, and the
 full form of each elided spelling it prints. ``WordTokenizer`` and ``Elisions`` hold no
-language of their own.
+language of their own. `quirks` is passed by name too, here ``RecognizerQuirks/none``
+for a recogniser with nothing to patch.
 
 Use ``RecognizerQuirks`` only for repeatable output of a named recognizer build.
 Quirks are not pronunciation rules, and a table published for another build is

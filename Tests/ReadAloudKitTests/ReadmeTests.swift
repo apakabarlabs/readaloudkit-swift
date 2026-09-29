@@ -55,6 +55,7 @@ struct ReadmeTests {
         let elisions = Elisions(fullForms: work.elisions)
         let tracker = SpokenLineTracker(
             lines: ["Will be a tatter’d weed", "of small worth held"],
+            quirks: .none,
             elisions: elisions,
             tokenizer: tokenizer
         )

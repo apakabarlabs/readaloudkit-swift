@@ -96,9 +96,12 @@ public struct SpokenLineTracker: Sendable {
     public let tokenizer: WordTokenizer
 
     /// Creates a tracker for one printed line.
+    ///
+    /// `quirks`, `elisions` and `tokenizer` have no default: each comes from the
+    /// recogniser's or the work's data, and ``RecognizerQuirks/none`` is passed by name.
     public init(
         line: String,
-        quirks: RecognizerQuirks = .none,
+        quirks: RecognizerQuirks,
         elisions: Elisions,
         tokenizer: WordTokenizer
     ) {
@@ -108,7 +111,7 @@ public struct SpokenLineTracker: Sendable {
     /// Creates a tracker that checks all printed lines as one continuous attempt.
     public init(
         lines: [String],
-        quirks: RecognizerQuirks = .none,
+        quirks: RecognizerQuirks,
         elisions: Elisions,
         tokenizer: WordTokenizer
     ) {

@@ -79,6 +79,9 @@
   )
   ```
 
+- `SpokenLineTracker(line:…)` and `SpokenLineTracker(lines:…)` take `quirks` with no
+  default, as they take `tokenizer` and `elisions`; pass `.none` for a recogniser with
+  nothing to patch.
 - An elided spelling counts as said only when the heard word is the full form the
   work's data gives for it, passed as `Elisions`. `SpokenLineTracker(line:…)`,
   `SpokenLineTracker(lines:…)`, `SpokenWords.check` and `SpokenLineTracker.isFaithful`

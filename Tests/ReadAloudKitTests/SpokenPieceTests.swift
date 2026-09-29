@@ -15,6 +15,7 @@ struct SpokenPieceTests {
     func statesAreCutBackIntoLines() {
         let tracker = SpokenLineTracker(
             lines: quatrain,
+            quirks: .none,
             elisions: .none,
             tokenizer: Cases.sonnetsTokenizer
         )
@@ -37,7 +38,12 @@ struct SpokenPieceTests {
     @Test("a tracker keeps the tokenizer it was made with")
     func keepsItsTokenizer() {
         let plain = WordTokenizer(interiorMarks: CharacterSet(charactersIn: "-"))
-        let tracker = SpokenLineTracker(line: "beauty's rose", elisions: .none, tokenizer: plain)
+        let tracker = SpokenLineTracker(
+            line: "beauty's rose",
+            quirks: .none,
+            elisions: .none,
+            tokenizer: plain
+        )
 
         #expect(tracker.tokenizer.interiorMarks == plain.interiorMarks)
     }
@@ -47,6 +53,7 @@ struct SpokenPieceTests {
         let listed = Elisions(fullForms: ["tatter’d": "tattered"])
         let tracker = SpokenLineTracker(
             line: "a tatter’d weed",
+            quirks: .none,
             elisions: listed,
             tokenizer: Cases.sonnetsTokenizer
         )
