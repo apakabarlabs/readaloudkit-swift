@@ -6,9 +6,27 @@ private enum AllowanceCodingKeys: String, CodingKey {
     case heard
 }
 
+private struct PublishedQuirks: Decodable {
+    let build: String
+    let version: String
+    let words: [String: [RecognizerQuirks.Allowance]]
+
+    private enum CodingKeys: String, CodingKey {
+        case build, version, words
+    }
+
+    init(from decoder: Decoder) throws {
+        try decoder.refuseKeys(otherThan: CodingKeys.self, of: "a published hearing table")
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        build = try container.decode(String.self, forKey: .build)
+        version = try container.decode(String.self, forKey: .version)
+        words = try container.decode([String: [RecognizerQuirks.Allowance]].self, forKey: .words)
+    }
+}
+
 /// Explicit spellings that one recognizer may return for particular written words.
 ///
-/// Quirks repair a named model's repeatable transcription behavior; they are not
+/// Quirks repair a named build's repeatable transcription behavior; they are not
 /// general rules of pronunciation or language.
 public struct RecognizerQuirks: Sendable {
     /// One permitted heard spelling, optionally limited by the preceding written word.
@@ -24,19 +42,14 @@ public struct RecognizerQuirks: Sendable {
             self.after = after.map(TranscriptAligner.normalize)
         }
 
+        /// Decodes `{"heard": ..., "after": ...}`, refusing any other field or shape.
         public init(from decoder: Decoder) throws {
-            let decodedHeard: String
-            let decodedAfter: String?
-            do {
-                decodedHeard = try decoder.singleValueContainer().decode(String.self)
-                decodedAfter = nil
-            } catch DecodingError.typeMismatch {
-                try decoder.refuseKeys(otherThan: AllowanceCodingKeys.self, of: "an allowance")
-                let keyed = try decoder.container(keyedBy: AllowanceCodingKeys.self)
-                decodedHeard = try keyed.decode(String.self, forKey: .heard)
-                decodedAfter = try keyed.decodeIfPresent(String.self, forKey: .after)
-            }
-            self.init(heard: decodedHeard, after: decodedAfter)
+            try decoder.refuseKeys(otherThan: AllowanceCodingKeys.self, of: "an allowance")
+            let keyed = try decoder.container(keyedBy: AllowanceCodingKeys.self)
+            self.init(
+                heard: try keyed.decode(String.self, forKey: .heard),
+                after: try keyed.decodeIfPresent(String.self, forKey: .after)
+            )
         }
     }
 
@@ -60,28 +73,30 @@ public struct RecognizerQuirks: Sendable {
     /// Whether this set permits no recognizer substitutions.
     public var isEmpty: Bool { variants.isEmpty }
 
-    /// The requested model has no entry in a decoded quirk table.
-    public struct UnknownModel: Error, CustomStringConvertible {
-        /// Requested model identifier.
-        public let model: String
-        /// Model identifiers present in the table.
-        public let known: [String]
+    /// A published hearing table belongs to another recognizer build.
+    public struct WrongBuild: Error, Equatable, CustomStringConvertible {
+        /// The build the caller asked for.
+        public let requested: String
+        /// The build the table was published for.
+        public let published: String
         public var description: String {
-            "no patches listed for \(model); the table has \(known.sorted().joined(separator: ", "))"
+            "the hearing table was published for \(published), not \(requested)"
         }
     }
 
-    /// Decodes the allowances for `model`, refusing a table that does not name it.
+    /// Decodes the hearing table the server publishes for one recognizer build.
     ///
-    /// The JSON root maps model identifiers to written words. Each written word maps
-    /// to an array containing either a heard string or `{ "heard": ..., "after": ... }`.
-    /// A pair with any other field is refused, as is a value of another type.
-    public static func decode(_ data: Data, model: String) throws -> Self {
-        let table = try JSONDecoder().decode([String: [String: [Allowance]]].self, from: data)
-        guard let allowances = table[model] else {
-            throw UnknownModel(model: model, known: Array(table.keys))
+    /// The document is `{"build": ..., "version": ..., "words": {written: [allowance]}}`,
+    /// each allowance `{"heard": ..., "after": ...}` with `after` optional. Any other
+    /// field, shape or type is refused, and so is a table published for another build.
+    ///
+    /// - Throws: `DecodingError` for another shape, or ``WrongBuild``.
+    public static func decode(_ data: Data, build: String) throws -> Self {
+        let published = try JSONDecoder().decode(PublishedQuirks.self, from: data)
+        guard published.build == build else {
+            throw WrongBuild(requested: build, published: published.build)
         }
-        return Self(allowances: allowances)
+        return Self(allowances: published.words)
     }
 
     /// Reports whether `heard` is an explicit allowance for `written` in this context.

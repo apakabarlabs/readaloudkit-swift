@@ -149,13 +149,6 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
         }
     }
 
-    /// Decodes an alignment from its JSON representation.
-    ///
-    /// - Throws: `DecodingError` for JSON of another shape, or ``TimingError``.
-    public static func decode(_ data: Data) throws -> Self {
-        try JSONDecoder().decode(Self.self, from: data)
-    }
-
     /// Associates the supplied times with the words of a passage.
     ///
     /// The alignment carries the words it was built from. If the passage changes after

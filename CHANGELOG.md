@@ -77,9 +77,44 @@
   recording read in order, with a `NarrationAlignment.TimingError` naming the word and
   its printed line: a negative start, an end before its start, or a start before the
   word ahead of it. Values made in code are not checked.
-- Decoding a `NarrationAlignment`, its words, or a `RecognizerQuirks` table refuses a
-  field it does not have with a `DecodingError` naming that field, where it used to skip
-  it: a producer that renamed or added a field is heard from rather than half read.
+- An alignment is read as the server publishes it, `{"version": ..., "alignment": {...}}`,
+  with `PublishedAlignment.decode(_:)`, which returns the version beside the alignment.
+  `NarrationAlignment.decode(_:)` is gone: nothing publishes a bare alignment.
+
+  Before:
+
+  ```swift
+  let alignment = try NarrationAlignment.decode(data)
+  ```
+
+  After:
+
+  ```swift
+  let alignment = try PublishedAlignment.decode(data).alignment
+  ```
+
+- A hearing table is read as the server publishes it for one recogniser build,
+  `{"build": ..., "version": ..., "words": {written: [{"heard": ..., "after": ...}]}}`.
+  `RecognizerQuirks.decode(_:build:)` refuses a table published for another build with
+  `RecognizerQuirks.WrongBuild`. The table keyed by model, `decode(_:model:)`,
+  `UnknownModel` and a bare heard string in place of `{"heard": ...}` are gone: no
+  server publishes them.
+
+  Before:
+
+  ```swift
+  let quirks = try RecognizerQuirks.decode(data, model: "parakeet")
+  ```
+
+  After:
+
+  ```swift
+  let quirks = try RecognizerQuirks.decode(data, build: "parakeet-tdt-0.6b-v3-sherpa-int8")
+  ```
+
+- Decoding a published alignment, its words, or a hearing table refuses a field it does
+  not have with a `DecodingError` naming that field, where it used to skip it: a
+  producer that renamed or added a field is heard from rather than half read.
 - `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
   both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
   still sit on another line.

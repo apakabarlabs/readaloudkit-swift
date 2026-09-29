@@ -31,16 +31,33 @@ struct ExpectationFailed: Error, CustomStringConvertible {
     let description: String
 }
 
+struct ExpectedPublished: Codable, Sendable {
+    let version: String
+    let alignment: NarrationAlignment
+
+    var published: PublishedAlignment {
+        PublishedAlignment(version: version, alignment: alignment)
+    }
+}
+
 struct DecodeCase: NamedCase {
     let name: String
-    let json: String
-    let alignment: NarrationAlignment?
+    let served: String?
+    let json: String?
+    let published: ExpectedPublished?
     let malformed: Bool?
     let timingError: ExpectedTimingError?
 
     private enum CodingKeys: String, CodingKey {
-        case name, json, alignment, malformed
+        case name, served, json, published, malformed
         case timingError = "timing_error"
+    }
+
+    var data: Data {
+        get throws {
+            if let served { return try Cases.served(served) }
+            return Data(try #require(json, "\(name): a case reads served or json").utf8)
+        }
     }
 }
 
@@ -106,18 +123,18 @@ struct TimingsCase: NamedCase {
 struct NarrationAlignmentTests {
     @Test(arguments: AlignmentCases.all.decode)
     func readsWhatAServerPublishes(_ example: DecodeCase) throws {
-        let data = Data(example.json.utf8)
+        let data = try example.data
         if let expected = example.timingError {
             let error = try expected.error
-            #expect(throws: error) { try NarrationAlignment.decode(data) }
+            #expect(throws: error) { try PublishedAlignment.decode(data) }
             return
         }
         if example.malformed == true {
-            #expect(throws: DecodingError.self) { try NarrationAlignment.decode(data) }
+            #expect(throws: DecodingError.self) { try PublishedAlignment.decode(data) }
             return
         }
-        let expected = try #require(example.alignment, "a readable case pins the alignment")
-        #expect(try NarrationAlignment.decode(data) == expected)
+        let expected = try #require(example.published, "a readable case pins the document")
+        #expect(try PublishedAlignment.decode(data) == expected.published)
     }
 
     @Test(arguments: AlignmentCases.all.timings)
@@ -154,6 +171,6 @@ struct NarrationAlignmentTests {
         )
         let data = try JSONEncoder().encode(original)
 
-        #expect(try NarrationAlignment.decode(data) == original)
+        #expect(try JSONDecoder().decode(NarrationAlignment.self, from: data) == original)
     }
 }

@@ -25,6 +25,14 @@ enum Cases {
         }
     }
 
+    static func served(_ name: String) throws -> Data {
+        let url = try #require(
+            Bundle.module.url(forResource: name, withExtension: nil),
+            "\(name) is not among the test resources: run `make served`"
+        )
+        return try Data(contentsOf: url)
+    }
+
     private static func unreadKeys(
         in written: Any?,
         readAs read: Any?,

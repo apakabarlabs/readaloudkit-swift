@@ -16,42 +16,50 @@ struct QuirkQuery: Codable, Sendable {
     let allowed: Bool
 }
 
-struct UnknownModelCase: Codable, Sendable {
-    let model: String
-    let known: [String]
+struct WrongBuildCase: Codable, Sendable {
+    let requested: String
+    let published: String
 }
 
 struct QuirksCase: NamedCase {
     let name: String
+    let served: String?
     let table: String?
-    let model: String?
+    let build: String?
     let allowances: [String: [AllowanceEntry]]?
-    let unknownModel: UnknownModelCase?
+    let wrongBuild: WrongBuildCase?
     let malformed: Bool?
     let empty: Bool?
     let queries: [QuirkQuery]?
 
     private enum CodingKeys: String, CodingKey {
-        case name, table, model, allowances, malformed, empty, queries
-        case unknownModel = "unknown_model"
+        case name, served, table, build, allowances, malformed, empty, queries
+        case wrongBuild = "wrong_build"
     }
 
     func quirks() throws -> RecognizerQuirks {
-        guard let table else { return Cases.quirks(allowances) }
-        let model = try #require(model, "\(name): a table is read for a model")
-        return try RecognizerQuirks.decode(Data(table.utf8), model: model)
+        let data: Data
+        if let served {
+            data = try Cases.served(served)
+        } else if let table {
+            data = Data(table.utf8)
+        } else {
+            return Cases.quirks(allowances)
+        }
+        let build = try #require(build, "\(name): a table is read for a build")
+        return try RecognizerQuirks.decode(data, build: build)
     }
 }
 
 struct RecognizerQuirksTests {
     @Test(arguments: QuirksCases.all)
     func allowsWhatTheTableSays(_ example: QuirksCase) throws {
-        if let expected = example.unknownModel {
-            let error = try #require(throws: RecognizerQuirks.UnknownModel.self) {
-                try example.quirks()
-            }
-            #expect(error.model == expected.model)
-            #expect(error.known.sorted() == expected.known)
+        if let expected = example.wrongBuild {
+            let refusal = RecognizerQuirks.WrongBuild(
+                requested: expected.requested,
+                published: expected.published
+            )
+            #expect(throws: refusal) { try example.quirks() }
             return
         }
         if example.malformed == true {
