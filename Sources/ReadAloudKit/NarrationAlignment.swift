@@ -1,11 +1,17 @@
 import Foundation
 
+private enum WordCodingKeys: String, CodingKey {
+    case line, text, start, end
+}
+
 /// Word-timing metadata supplied for a recorded narration.
 ///
 /// Unlike an estimated timeline, an alignment preserves the producer's supplied start
 /// and end for every listed word. Decoding refuses times that cannot describe one
 /// recording read in order: a negative start, an end before its start, or a word that
-/// starts before the word listed ahead of it. Values created in code are not checked.
+/// starts before the word listed ahead of it. It also refuses a field neither the
+/// alignment nor its words have, and a value of another type than the field's. Values
+/// created in code are not checked.
 public struct NarrationAlignment: Codable, Sendable, Equatable {
     /// One word and its supplied interval in the recording.
     public struct Word: Codable, Sendable, Equatable {
@@ -24,6 +30,18 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
             self.text = text
             self.start = start
             self.end = end
+        }
+
+        /// Decodes one word, refusing a field the word does not have.
+        public init(from decoder: Decoder) throws {
+            try decoder.refuseKeys(otherThan: WordCodingKeys.self, of: "a word")
+            let container = try decoder.container(keyedBy: WordCodingKeys.self)
+            self.init(
+                line: try container.decode(Int.self, forKey: .line),
+                text: try container.decode(String.self, forKey: .text),
+                start: try container.decode(TimeInterval.self, forKey: .start),
+                end: try container.decode(TimeInterval.self, forKey: .end)
+            )
         }
     }
 
@@ -52,8 +70,12 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
 
     /// Decodes an alignment and refuses times that are out of order or out of bounds.
     ///
-    /// - Throws: ``TimingError`` naming the first word whose times cannot stand.
+    /// A field the alignment or one of its words does not have is refused, not skipped.
+    ///
+    /// - Throws: `DecodingError` for another shape, or ``TimingError`` naming the first
+    ///   word whose times cannot stand.
     public init(from decoder: Decoder) throws {
+        try decoder.refuseKeys(otherThan: CodingKeys.self, of: "an alignment")
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let words = try container.decode([Word].self, forKey: .words)
         try Self.check(words)

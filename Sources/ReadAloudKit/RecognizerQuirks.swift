@@ -31,6 +31,7 @@ public struct RecognizerQuirks: Sendable {
                 decodedHeard = try decoder.singleValueContainer().decode(String.self)
                 decodedAfter = nil
             } catch DecodingError.typeMismatch {
+                try decoder.refuseKeys(otherThan: AllowanceCodingKeys.self, of: "an allowance")
                 let keyed = try decoder.container(keyedBy: AllowanceCodingKeys.self)
                 decodedHeard = try keyed.decode(String.self, forKey: .heard)
                 decodedAfter = try keyed.decodeIfPresent(String.self, forKey: .after)
@@ -74,6 +75,7 @@ public struct RecognizerQuirks: Sendable {
     ///
     /// The JSON root maps model identifiers to written words. Each written word maps
     /// to an array containing either a heard string or `{ "heard": ..., "after": ... }`.
+    /// A pair with any other field is refused, as is a value of another type.
     public static func decode(_ data: Data, model: String) throws -> Self {
         let table = try JSONDecoder().decode([String: [String: [Allowance]]].self, from: data)
         guard let allowances = table[model] else {

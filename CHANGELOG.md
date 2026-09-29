@@ -77,6 +77,9 @@
   recording read in order, with a `NarrationAlignment.TimingError` naming the word and
   its printed line: a negative start, an end before its start, or a start before the
   word ahead of it. Values made in code are not checked.
+- Decoding a `NarrationAlignment`, its words, or a `RecognizerQuirks` table refuses a
+  field it does not have with a `DecodingError` naming that field, where it used to skip
+  it: a producer that renamed or added a field is heard from rather than half read.
 - `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
   both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
   still sit on another line.
