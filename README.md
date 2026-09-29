@@ -58,7 +58,9 @@ not.
 What the library answers for a given input is written down in YAML under
 `Tests/ReadAloudKitTests/Resources/`, one file per subject, and every port is held
 to the same files. What stays in Swift is the runner, and the tests that are about
-the shape of the Swift API rather than about an answer.
+the shape of the Swift API rather than about an answer. The documents the server
+publishes are read as served: `make served` fetches them beside the cases, from the
+endpoints the apps read.
 
 ## The measure belongs here
 
