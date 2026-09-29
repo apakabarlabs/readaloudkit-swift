@@ -36,6 +36,7 @@ private struct Document: Sendable, CustomTestStringConvertible {
         Self(
             path: "CHANGELOG.md",
             runBy: [
+                "changelogRestoresAStoredStage",
                 "changelogNamesThePiece",
                 "changelogKeepsTheTokenizer",
                 "changelogTakesTheLanguageFromData",
@@ -77,6 +78,11 @@ struct ReadmeTests {
         let progress = tracker.progress(heard: "will be a tattered weed of small worth held")
         let completed = progress.isComplete
         return completed
+    }
+
+    private func changelogRestoresAStoredStage(_ raw: Int) throws -> StageState {
+        let stage = try StageState(stored: raw)
+        return stage
     }
 
     private func changelogNamesThePiece(
@@ -148,6 +154,7 @@ struct ReadmeTests {
         let words = [NarrationAlignment.Word(line: 0, text: "Will", start: 0, end: 0.2)]
         let transcript = "will be a tattered weed of small worth held"
 
+        #expect(try changelogRestoresAStoredStage(2) == .complete)
         #expect(changelogNamesThePiece(words: words, recording: "r").piece == "18")
         #expect(
             changelogKeepsTheTokenizer(

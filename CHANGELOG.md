@@ -8,15 +8,29 @@
   work's data. A spelling may stand for several full forms, any of which counts as
   said, and spellings that normalize alike are merged.
 - `PublishedAlignment`, an alignment and the version the server published it under.
-- `UnknownStageState`: `StageState(stored:)` now throws it for a stored value this
-  build cannot read, where it used to stop the app; what to show instead is the
-  caller's decision.
+- `UnknownStageState`, the error `StageState(stored:)` throws for a stored value this
+  build cannot read.
 - `NotUTF8`: a served alignment or hearing table is read as UTF-8, with or without a
   byte order mark, and text in any other encoding is refused with this error. A second
   byte order mark, a lone surrogate escaped in any string, and a control character
   written raw inside a string are refused with a `DecodingError`, as JSON forbids them.
 
 ### Changed
+
+- `StageState(stored:)` throws `UnknownStageState` for a stored value this build cannot
+  read, where it used to stop the app; what to show instead is the caller's decision.
+
+  Before:
+
+  ```swift
+  let stage = StageState(stored: raw)
+  ```
+
+  After:
+
+  ```swift
+  let stage = try StageState(stored: raw)
+  ```
 
 - `NarrationAlignment.sonnet: Int` is now `piece: String`, the field and type the
   server's narration schema publishes: a work names its pieces by their own ids, and
