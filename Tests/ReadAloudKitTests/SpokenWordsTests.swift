@@ -2,49 +2,54 @@ import Testing
 
 @testable import ReadAloudKit
 
+struct SpokenWordsCases: Decodable {
+    let tests: [SpokenWordsCase]
+    let faithful: [FaithfulCase]
+
+    static let all = Cases.load("spoken_words_tests.yaml", as: Self.self)
+}
+
+struct SpokenWordsCase: NamedCase {
+    let name: String
+    let expected: [String]
+    let heard: [String]
+    let quirks: [String: [RecognizerQuirks.Allowance]]?
+    let matches: Int?
+    let faithful: Set<Int>
+}
+
+struct FaithfulCase: NamedCase {
+    let name: String
+    let heard: String
+    let written: String
+    let faithful: Bool
+}
+
 struct SpokenWordsTests {
-    private let quirks = RecognizerQuirks(allowances: ["heir": ["air"], "O": ["oh"]])
+    @Test(arguments: SpokenWordsCases.all.tests)
+    func acceptsOnlyFaithfulWords(_ example: SpokenWordsCase) {
+        let checked = SpokenWords.check(
+            expected: example.expected,
+            heard: example.heard,
+            quirks: Cases.quirks(example.quirks)
+        )
 
-    @Test("a word said as written is faithful")
-    func exact() {
-        let checked = SpokenWords.check(expected: ["love"], heard: ["love"], quirks: .none)
-        #expect(checked.faithful == [0])
+        if let matches = example.matches {
+            #expect(checked.matches.count == matches)
+        }
+        #expect(checked.faithful == example.faithful)
     }
 
-    @Test("a similar word is paired but not faithful")
-    func similar() {
-        let checked = SpokenWords.check(expected: ["love"], heard: ["dove"], quirks: .none)
-        #expect(checked.matches.count == 1)
-        #expect(checked.faithful.isEmpty)
-    }
+    @Test(arguments: SpokenWordsCases.all.faithful)
+    func tellsAFaithfulSpelling(_ example: FaithfulCase) {
+        let faithful = SpokenLineTracker.isFaithful(example.heard, to: example.written)
 
-    @Test("an elision spelled out is faithful without a patch")
-    func elision() {
-        let checked = SpokenWords.check(expected: ["tatter’d"], heard: ["tattered"], quirks: .none)
-        #expect(checked.faithful == [0])
-    }
-
-    @Test("a patched word is paired by the patch and then accepted by it")
-    func patched() {
-        let checked = SpokenWords.check(expected: ["heir"], heard: ["air"], quirks: quirks)
-        #expect(checked.matches.count == 1)
-        #expect(checked.faithful == [0])
-    }
-
-    @Test("without the table the same pair is not even put together")
-    func patchedWithoutTable() {
-        let checked = SpokenWords.check(expected: ["heir"], heard: ["air"], quirks: .none)
-        #expect(checked.faithful.isEmpty)
-    }
-
-    @Test("a word nothing was heard for is neither paired nor faithful")
-    func missing() {
-        let checked = SpokenWords.check(expected: ["love", "is"], heard: ["love"], quirks: .none)
-        #expect(checked.faithful == [0])
+        #expect(faithful == example.faithful)
     }
 
     @Test("the reader's word checks are that same pass")
     func progressAgrees() {
+        let quirks = RecognizerQuirks(allowances: ["heir": ["air"], "O": ["oh"]])
         let tracker = SpokenLineTracker(line: "O heir of love", quirks: quirks)
         let progress = tracker.progress(heard: "oh air of dove")
         let checked = SpokenWords.check(

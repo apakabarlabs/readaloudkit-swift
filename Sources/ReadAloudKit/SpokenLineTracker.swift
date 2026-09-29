@@ -89,6 +89,9 @@ public struct SpokenLineTracker: Sendable {
     /// The number of expected words in each printed line.
     public let lineLengths: [Int]
 
+    /// Splits both the printed lines and every transcript checked against them.
+    public let tokenizer: WordTokenizer
+
     /// Creates a tracker for one printed line.
     public init(
         line: String,
@@ -108,6 +111,7 @@ public struct SpokenLineTracker: Sendable {
         expected = words.flatMap(\.self)
         lineLengths = words.map(\.count)
         self.quirks = quirks
+        self.tokenizer = tokenizer
     }
 
     /// Counts spoken words in each line using `tokenizer`.
@@ -146,13 +150,10 @@ public struct SpokenLineTracker: Sendable {
 
     /// Checks a complete recognized transcript against the tracked printed words.
     ///
-    /// Extra words outside the best alignment do not count against the printed words.
-    public func progress(
-        heard transcript: String,
-        tokenizer: WordTokenizer = .latinScript
-    )
-        -> Progress
-    {
+    /// The transcript is split by the tracker's own ``tokenizer``, so printed and heard
+    /// words are cut by one rule. Extra words outside the best alignment do not count
+    /// against the printed words.
+    public func progress(heard transcript: String) -> Progress {
         let heard = tokenizer.wordRanges(in: transcript).map { String(transcript[$0]) }
         let checked = SpokenWords.check(expected: expected, heard: heard, quirks: quirks)
         var checks = [WordCheck](repeating: .wrong, count: expected.count)

@@ -25,8 +25,8 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
         }
     }
 
-    /// Application-defined numeric identifier of the aligned passage.
-    public let sonnet: Int
+    /// Identifier of the aligned piece, as the work names it.
+    public let piece: String
     /// Duration of the recording in seconds.
     public let duration: TimeInterval
     /// Supplied word intervals in passage order.
@@ -37,8 +37,8 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
 
     /// Creates the representation shared by the tool that measures a recording and
     /// the client that presents it.
-    public init(sonnet: Int, duration: TimeInterval, words: [Word], recording: String? = nil) {
-        self.sonnet = sonnet
+    public init(piece: String, duration: TimeInterval, words: [Word], recording: String? = nil) {
+        self.piece = piece
         self.duration = duration
         self.words = words
         self.recording = recording

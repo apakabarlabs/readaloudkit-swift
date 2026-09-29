@@ -2,25 +2,36 @@ import Testing
 
 @testable import ReadAloudKit
 
+struct ProgressCases: Decodable {
+    let pieces: [PiecesCase]
+    let stage: [StageCase]
+
+    static let all = Cases.load("progress_tests.yaml", as: Self.self)
+}
+
+struct PiecesCase: NamedCase {
+    let name: String
+    let total: Int
+    let tried: Set<Int>
+    let cleared: Set<Int>
+    let states: [String]
+}
+
+struct StageCase: NamedCase {
+    let name: String
+    let pieces: [String]
+    let stage: String
+}
+
 struct PieceProgressTests {
-    @Test("progress keeps non-consecutive pieces in their positions")
-    func nonConsecutivePieces() {
+    @Test(arguments: ProgressCases.all.pieces)
+    func keepsPiecesInTheirPositions(_ example: PiecesCase) throws {
         let states = PieceProgress.states(
-            total: 7,
-            tried: [1, 3, 5],
-            cleared: [1, 5]
+            total: example.total,
+            tried: example.tried,
+            cleared: example.cleared
         )
 
-        #expect(
-            states == [
-                .untouched,
-                .cleared,
-                .untouched,
-                .tried,
-                .untouched,
-                .cleared,
-                .untouched
-            ]
-        )
+        #expect(states == (try example.states.map(PieceProgressState.named)))
     }
 }

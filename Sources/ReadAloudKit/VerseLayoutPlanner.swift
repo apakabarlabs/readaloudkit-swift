@@ -41,7 +41,7 @@ public enum VerseLayoutPlanner {
         candidateWidths: [Double],
         indent: Double
     ) -> VerseLayoutPlan {
-        guard let widest = candidateWidths.max(), !candidateWidths.isEmpty else {
+        guard let widest = candidateWidths.max() else {
             return VerseLayoutPlan(columnWidth: 0, rowStarts: lines.map { _ in [0] })
         }
 
@@ -51,8 +51,7 @@ public enum VerseLayoutPlanner {
             let rows: [[Int]]
         }
 
-        var best: Candidate?
-        for width in candidateWidths.sorted(by: >) {
+        let candidates = candidateWidths.sorted(by: >).map { width in
             var total = (widest - width) * narrowingPenaltyPerPoint
             var rows: [[Int]] = []
             for words in lines {
@@ -65,13 +64,10 @@ public enum VerseLayoutPlanner {
                 total += line.cost
                 rows.append(line.starts)
             }
-            if best.map({ total < $0.cost }) ?? true {
-                best = Candidate(width: width, cost: total, rows: rows)
-            }
+            return Candidate(width: width, cost: total, rows: rows)
         }
-
-        guard let chosen = best else {
-            return VerseLayoutPlan(columnWidth: widest, rowStarts: lines.map { _ in [0] })
+        let chosen = candidates.dropFirst().reduce(candidates[0]) { best, candidate in
+            candidate.cost < best.cost ? candidate : best
         }
         return VerseLayoutPlan(columnWidth: chosen.width, rowStarts: chosen.rows)
     }

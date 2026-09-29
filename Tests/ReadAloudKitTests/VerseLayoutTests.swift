@@ -2,6 +2,36 @@ import Testing
 
 @testable import ReadAloudKit
 
+struct LayoutCases: Decodable {
+    let `break`: [BreakCase]
+    let run: [RunCase]
+
+    static let all = Cases.load("layout_tests.yaml", as: Self.self)
+}
+
+struct BreakCase: NamedCase {
+    let name: String
+    let words: [Double]
+    let space: Double
+    let width: Double
+    let indent: Double
+    let starts: [Int]
+}
+
+struct RunCase: NamedCase {
+    let name: String
+    let words: [Double]
+    let from: Int
+    let end: Int
+    let space: Double
+    let width: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case name, words, from, space, width
+        case end = "to"
+    }
+}
+
 struct VerseLayoutTests {
     private let space = 1.0
     private let indent = 8.0
@@ -11,9 +41,28 @@ struct VerseLayoutTests {
             .starts
     }
 
-    @Test("a line that fits is never broken")
-    func leavesShortLineAlone() {
-        #expect(breakLine([10, 10, 10], width: 100) == [0])
+    @Test(arguments: LayoutCases.all.break)
+    func breaksWhereTheCaseSays(_ example: BreakCase) {
+        let starts = VerseLayoutPlanner.breakLine(
+            words: example.words,
+            spaceWidth: example.space,
+            width: example.width,
+            indent: example.indent
+        ).starts
+
+        #expect(starts == example.starts)
+    }
+
+    @Test(arguments: LayoutCases.all.run)
+    func measuresRunsWithSpaces(_ example: RunCase) {
+        let width = VerseLayoutPlanner.run(
+            example.words,
+            from: example.from,
+            to: example.end,
+            spaceWidth: example.space
+        )
+
+        #expect(width == example.width)
     }
 
     @Test("a line that does not fit is broken once")
@@ -31,13 +80,6 @@ struct VerseLayoutTests {
 
         #expect(starts.count == 2)
         #expect(starts[1] < words.count - 1)
-    }
-
-    @Test("a stranded word is accepted only when nothing else is possible")
-    func acceptsLonelyWordWhenForced() {
-        let starts = breakLine([40, 40], width: 50)
-
-        #expect(starts == [0, 1])
     }
 
     @Test("the two parts come out balanced rather than lopsided")
@@ -102,10 +144,15 @@ struct VerseLayoutTests {
         #expect(split < 3)
     }
 
-    @Test("widths are the planner's only input about the text")
-    func measuresRunsWithSpaces() {
-        #expect(VerseLayoutPlanner.run([10, 10, 10], from: 0, to: 3, spaceWidth: 2) == 34)
-        #expect(VerseLayoutPlanner.run([10, 10, 10], from: 1, to: 2, spaceWidth: 2) == 10)
-        #expect(VerseLayoutPlanner.run([10, 10, 10], from: 2, to: 2, spaceWidth: 2) == 0)
+    @Test("no candidate widths lay every line out as one row at width zero")
+    func plansWithoutCandidates() {
+        let plan = VerseLayoutPlanner.plan(
+            lines: [[10, 10], [20]],
+            spaceWidth: space,
+            candidateWidths: [],
+            indent: indent
+        )
+
+        #expect(plan == VerseLayoutPlan(columnWidth: 0, rowStarts: [[0], [0]]))
     }
 }

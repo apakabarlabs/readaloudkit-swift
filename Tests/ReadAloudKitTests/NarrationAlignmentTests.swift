@@ -3,65 +3,109 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct NarrationAlignmentTests {
-    private let passage = Passage(lines: ["From fairest creatures", "we desire increase,"])
+struct AlignmentCases: Decodable {
+    let tests: [AlignmentCase]
 
-    private func alignment(words: [NarrationAlignment.Word]) -> NarrationAlignment {
-        NarrationAlignment(sonnet: 1, duration: 10, words: words)
+    static let all = Cases.load("alignment_tests.yaml", as: Self.self).tests
+}
+
+struct ExpectedTiming: Decodable, Sendable {
+    let index: Int
+    let text: String
+    let line: Int
+    let start: TimeInterval
+    let end: TimeInterval
+}
+
+struct CountMismatch: Decodable, Sendable {
+    let expected: Int
+    let found: Int
+}
+
+struct WordMismatch: Decodable, Sendable {
+    let index: Int
+    let expected: String
+    let found: String
+}
+
+struct AlignmentCase: NamedCase {
+    let name: String
+    let lines: [String]
+    let words: [NarrationAlignment.Word]
+    let count: Int?
+    let timingsAt: [ExpectedTiming]?
+    let wordCountMismatch: CountMismatch?
+    let wordMismatch: WordMismatch?
+
+    private enum CodingKeys: String, CodingKey {
+        case name, lines, words, count
+        case timingsAt = "timings_at"
+        case wordCountMismatch = "word_count_mismatch"
+        case wordMismatch = "word_mismatch"
     }
 
-    private var measured: [NarrationAlignment.Word] {
-        [
-            .init(line: 0, text: "From", start: 0, end: 0.3),
-            .init(line: 0, text: "fairest", start: 0.3, end: 0.9),
-            .init(line: 0, text: "creatures", start: 0.9, end: 1.5),
-            .init(line: 1, text: "we", start: 1.8, end: 2.0),
-            .init(line: 1, text: "desire", start: 2.0, end: 2.5),
-            .init(line: 1, text: "increase", start: 2.5, end: 3.2)
-        ]
-    }
-
-    @Test("measured times land on the words of the passage")
-    func marriesTimesToWords() throws {
-        let timings = try alignment(words: measured).timings(for: passage)
-
-        #expect(timings.count == 6)
-        #expect(timings[0].word.text == "From")
-        #expect(timings[0].start == 0)
-        #expect(timings[3].word.lineIndex == 1)
-        #expect(timings[3].start == 1.8)
-    }
-
-    @Test("a text edited after the markup was made is refused, not slid by one word")
-    func refusesDriftedText() {
-        let edited = Passage(lines: ["From fairest creatures", "we desire increase, and more"])
-
-        #expect(throws: NarrationAlignment.AlignmentError.wordCountMismatch(expected: 8, found: 6))
-        {
-            try alignment(words: measured).timings(for: edited)
+    var refusal: NarrationAlignment.AlignmentError? {
+        if let mismatch = wordCountMismatch {
+            return .wordCountMismatch(expected: mismatch.expected, found: mismatch.found)
         }
-    }
-
-    @Test("a word swapped in the text is caught by name")
-    func refusesChangedWord() {
-        let edited = Passage(lines: ["From fairest creatures", "we desire increases,"])
-
-        #expect(
-            throws: NarrationAlignment.AlignmentError.wordMismatch(
-                index: 5,
-                expected: "increases",
-                found: "increase"
+        if let mismatch = wordMismatch {
+            return .wordMismatch(
+                index: mismatch.index,
+                expected: mismatch.expected,
+                found: mismatch.found
             )
-        ) {
-            try alignment(words: measured).timings(for: edited)
+        }
+        return nil
+    }
+}
+
+struct NarrationAlignmentTests {
+    @Test(arguments: AlignmentCases.all)
+    func marriesTimesToWords(_ example: AlignmentCase) throws {
+        let alignment = NarrationAlignment(piece: "1", duration: 10, words: example.words)
+        let passage = Passage(lines: example.lines)
+        if let refusal = example.refusal {
+            #expect(throws: refusal) { try alignment.timings(for: passage) }
+            return
+        }
+        let timings = try alignment.timings(for: passage)
+        if let count = example.count {
+            #expect(timings.count == count)
+        }
+        for expected in example.timingsAt ?? [] {
+            let timing = timings[expected.index]
+            #expect(timing.word.text == expected.text)
+            #expect(timing.word.lineIndex == expected.line)
+            #expect(timing.start == expected.start)
+            #expect(timing.end == expected.end)
         }
     }
 
     @Test("alignment survives a round trip through json")
     func roundTrips() throws {
-        let original = alignment(words: measured)
+        let original = NarrationAlignment(
+            piece: "1",
+            duration: 10,
+            words: [.init(line: 0, text: "From", start: 0, end: 0.3)],
+            recording: "narration-001.mp3"
+        )
         let data = try JSONEncoder().encode(original)
 
         #expect(try NarrationAlignment.decode(data) == original)
+    }
+
+    @Test("the alignment a server publishes is read as it is served")
+    func readsTheServedShape() throws {
+        let served = Data(
+            """
+            {"piece": "18", "duration": 4.5, "recording": "narration-018.mp3",
+             "words": [{"line": 0, "text": "Shall", "start": 0.5, "end": 0.8}]}
+            """.utf8
+        )
+        let alignment = try NarrationAlignment.decode(served)
+
+        #expect(alignment.piece == "18")
+        #expect(alignment.recording == "narration-018.mp3")
+        #expect(alignment.words == [.init(line: 0, text: "Shall", start: 0.5, end: 0.8)])
     }
 }

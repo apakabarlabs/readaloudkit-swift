@@ -26,9 +26,20 @@ line the server holds, and nobody can say which is right.
 ## Use
 
 ```swift
-let check = SpokenWords.check(expected: written, heard: transcript, quirks: quirks)
-let saidEveryWord = check.faithful.count == check.matches.count
+let tracker = SpokenLineTracker(lines: printedLines, quirks: quirks)
+let saidEveryWord = tracker.progress(heard: transcript).isComplete
 ```
+
+A written word nothing was heard for is left out of `SpokenWords.check(...).matches`
+altogether, so comparing how many matches were faithful with how many there were
+does not show that every word was said; `isComplete` does.
+
+## Cases
+
+What the library answers for a given input is written down in YAML under
+`Tests/ReadAloudKitTests/Resources/`, one file per subject, and every port is held
+to the same files. What stays in Swift is the runner, and the tests that are about
+the shape of the Swift API rather than about an answer.
 
 ## The measure belongs here
 

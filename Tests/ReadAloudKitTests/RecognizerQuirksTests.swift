@@ -3,56 +3,49 @@ import Testing
 
 @testable import ReadAloudKit
 
+struct QuirksCases: Decodable {
+    let tests: [QuirksCase]
+
+    static let all = Cases.load("quirks_tests.yaml", as: Self.self).tests
+}
+
+struct QuirkQuery: Decodable, Sendable {
+    let heard: String
+    let written: String
+    let after: String?
+    let allowed: Bool
+}
+
+struct QuirksCase: NamedCase {
+    let name: String
+    let table: String?
+    let model: String?
+    let allowances: [String: [RecognizerQuirks.Allowance]]?
+    let refused: Bool?
+    let empty: Bool?
+    let queries: [QuirkQuery]?
+
+    func quirks() throws -> RecognizerQuirks {
+        guard let table else { return Cases.quirks(allowances) }
+        let model = try #require(model, "\(name): a table is read for a model")
+        return try RecognizerQuirks.decode(Data(table.utf8), model: model)
+    }
+}
+
 struct RecognizerQuirksTests {
-    private let table = Data(
-        """
-        {
-            "parakeet": {
-                "tatter'd": ["tattered"],
-                "in": [{"heard": "and", "after": "each"}]
-            },
-            "spotless": {}
+    @Test(arguments: QuirksCases.all)
+    func allowsWhatTheTableSays(_ example: QuirksCase) throws {
+        if example.refused == true {
+            #expect(throws: RecognizerQuirks.UnknownModel.self) { try example.quirks() }
+            return
         }
-        """.utf8
-    )
-
-    @Test("a model's patches are read from its own section")
-    func patchesComeFromTheModelSection() throws {
-        let quirks = try RecognizerQuirks.decode(table, model: "parakeet")
-        #expect(quirks.allows("tattered", forWritten: "tatter'd"))
-        #expect(!quirks.allows("tattered", forWritten: "battered"))
-    }
-
-    @Test("a patch tied to a phrase fires there and nowhere else")
-    func companyNarrowsThePatch() throws {
-        let quirks = try RecognizerQuirks.decode(table, model: "parakeet")
-        #expect(quirks.allows("and", forWritten: "in", after: "each"))
-        #expect(!quirks.allows("and", forWritten: "in", after: "delights"))
-        #expect(!quirks.allows("and", forWritten: "in"))
-    }
-
-    @Test("a model with an empty section needs no patches")
-    func emptySectionIsAModelThatNeedsNothing() throws {
-        let quirks = try RecognizerQuirks.decode(table, model: "spotless")
-        #expect(quirks.isEmpty)
-        #expect(!quirks.allows("tattered", forWritten: "tatter'd"))
-    }
-
-    @Test("two spellings of one key are added together, not one over the other")
-    func keysThatNormalizeAlikeAreMerged() {
-        let quirks = RecognizerQuirks(allowances: [
-            "Whate’er": ["whatever"],
-            "whate’er": ["what’er"]
-        ])
-        #expect(quirks.allows("whatever", forWritten: "Whate’er"))
-        #expect(quirks.allows("whater", forWritten: "whate’er"))
-        #expect(!quirks.allows("whenever", forWritten: "whate’er"))
-    }
-
-    @Test("a model the table says nothing about is refused, not treated as spotless")
-    func unknownModelIsRefused() {
-        #expect(throws: RecognizerQuirks.UnknownModel.self) {
-            try RecognizerQuirks.decode(table, model: "parakeet-v4")
+        let quirks = try example.quirks()
+        if let empty = example.empty {
+            #expect(quirks.isEmpty == empty)
+        }
+        for query in example.queries ?? [] {
+            let allowed = quirks.allows(query.heard, forWritten: query.written, after: query.after)
+            #expect(allowed == query.allowed, "\(query.heard) for \(query.written)")
         }
     }
 }

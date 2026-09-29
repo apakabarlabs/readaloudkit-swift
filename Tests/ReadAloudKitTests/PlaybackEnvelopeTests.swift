@@ -2,35 +2,52 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct PlaybackEnvelopeTests {
-    @Test("a cut segment reaches silence at both edges")
-    func fadesBothEdges() {
-        #expect(gain(at: 0) == 0)
-        #expect(gain(at: 5) == 0.5)
-        #expect(gain(at: 10) == 1)
-        #expect(gain(at: 89) == 1)
-        #expect(gain(at: 94) == 0.5)
-        #expect(gain(at: 99) == 0)
+struct AudioCases: Decodable {
+    let gain: [GainCase]
+    let waveform: [WaveformCase]
+
+    static let all = Cases.load("audio_tests.yaml", as: Self.self)
+}
+
+struct GainCase: NamedCase {
+    let name: String
+    let frameCount: Int
+    let fadeFrameCount: Int
+    let fadesIn: Bool
+    let fadesOut: Bool
+    let gains: [[Double]]?
+    let everyFrame: Float?
+
+    private enum CodingKeys: String, CodingKey {
+        case name, gains
+        case frameCount = "frame_count"
+        case fadeFrameCount = "fade_frame_count"
+        case fadesIn = "fades_in"
+        case fadesOut = "fades_out"
+        case everyFrame = "every_frame"
     }
 
-    @Test("an uncut recording keeps every sample")
-    func keepsUncutRecording() {
-        for frame in 0..<100 {
-            #expect(gain(at: frame, fadesIn: false, fadesOut: false) == 1)
-        }
-    }
-
-    private func gain(
-        at frame: Int,
-        fadesIn: Bool = true,
-        fadesOut: Bool = true
-    ) -> Float {
+    func gain(at frame: Int) -> Float {
         PlaybackEnvelope.gain(
             at: frame,
-            frameCount: 100,
-            fadeFrameCount: 10,
+            frameCount: frameCount,
+            fadeFrameCount: fadeFrameCount,
             fadesIn: fadesIn,
             fadesOut: fadesOut
         )
+    }
+}
+
+struct PlaybackEnvelopeTests {
+    @Test(arguments: AudioCases.all.gain)
+    func fadesTheEdges(_ example: GainCase) {
+        for pair in example.gains ?? [] {
+            #expect(example.gain(at: Int(pair[0])) == Float(pair[1]), "frame \(pair[0])")
+        }
+        if let every = example.everyFrame {
+            for frame in 0..<example.frameCount {
+                #expect(example.gain(at: frame) == every, "frame \(frame)")
+            }
+        }
     }
 }

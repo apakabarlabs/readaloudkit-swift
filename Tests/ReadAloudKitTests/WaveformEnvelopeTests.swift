@@ -2,24 +2,35 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct WaveformEnvelopeTests {
-    @Test("silence stays flat and sound keeps its shape")
-    func preservesShape() {
-        let envelope = WaveformEnvelope.make(
-            from: [Float](repeating: 0, count: 8) + [Float](repeating: 0.5, count: 8),
-            bars: 4
-        )
+struct SampleRun: Decodable, Sendable {
+    let value: Float
+    let count: Int
+}
 
-        #expect(envelope.count == 4)
-        #expect(envelope[0] == 0)
-        #expect(envelope[1] == 0)
-        #expect(envelope[2] > 0.8)
-        #expect(envelope[3] > 0.8)
+struct WaveformCase: NamedCase {
+    let name: String
+    let samples: [SampleRun]
+    let bars: Int
+    let count: Int
+    let exactly: [[Double]]?
+    let above: [[Double]]?
+
+    var built: [Float] {
+        samples.flatMap { Array(repeating: $0.value, count: $0.count) }
     }
+}
 
-    @Test("a short recording does not invent empty bars")
-    func boundsTheBarCount() {
-        #expect(WaveformEnvelope.make(from: [0.1, 0.2], bars: 48).count == 2)
-        #expect(WaveformEnvelope.make(from: [], bars: 48).isEmpty)
+struct WaveformEnvelopeTests {
+    @Test(arguments: AudioCases.all.waveform)
+    func keepsTheShape(_ example: WaveformCase) {
+        let envelope = WaveformEnvelope.make(from: example.built, bars: example.bars)
+
+        #expect(envelope.count == example.count)
+        for pair in example.exactly ?? [] {
+            #expect(envelope[Int(pair[0])] == pair[1], "bar \(pair[0])")
+        }
+        for pair in example.above ?? [] {
+            #expect(envelope[Int(pair[0])] > pair[1], "bar \(pair[0])")
+        }
     }
 }
