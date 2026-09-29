@@ -53,7 +53,12 @@
   After:
 
   ```swift
-  let tracker = SpokenLineTracker(lines: lines, tokenizer: tokenizer)
+  let tracker = SpokenLineTracker(
+      lines: lines,
+      quirks: .none,
+      elisions: .none,
+      tokenizer: tokenizer
+  )
   let progress = tracker.progress(heard: transcript)
   ```
 
@@ -75,10 +80,17 @@
 
   ```swift
   let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
-  SpokenLineTracker(lines: lines, elisions: Elisions(fullForms: work.elisions), tokenizer: tokenizer)
-  NarrationTimeline.estimate(
-      for: passage, duration: duration,
-      tokenizer: tokenizer, weighting: EnglishSyllableWeighting()
+  let tracker = SpokenLineTracker(
+      lines: lines,
+      quirks: quirks,
+      elisions: Elisions(fullForms: work.elisions),
+      tokenizer: tokenizer
+  )
+  let timings = NarrationTimeline.estimate(
+      for: passage,
+      duration: duration,
+      tokenizer: tokenizer,
+      weighting: EnglishSyllableWeighting()
   )
   ```
 
@@ -101,7 +113,8 @@
 
   ```swift
   SpokenLineTracker.isFaithful(
-      "tattered", to: "tatter’d",
+      "tattered",
+      to: "tatter’d",
       elisions: Elisions(fullForms: ["tatter’d": ["tattered"]])
   )
   ```
