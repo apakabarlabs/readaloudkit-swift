@@ -139,10 +139,11 @@
   let quirks = try RecognizerQuirks.decode(data, build: "parakeet-tdt-0.6b-v3-sherpa-int8")
   ```
 
-- Decoding a published alignment, its words, or a hearing table refuses a field it does
-  not have with a `DecodingError` naming that field, where it used to skip it: a
-  producer that renamed or added a field is heard from rather than half read. A word's
-  `line` outside a 32-bit integer is refused too, as every port refuses it.
+- Decoding a published alignment or a hearing table refuses a missing field and a
+  value of another type, but reads past a field it does not know, so that a field the
+  server adds later does not stop a build already installed. A word's `line` outside a
+  32-bit integer is refused, as every port refuses it. A key repeated within one object
+  keeps one of its values; which one is not promised and may differ between ports.
 - `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
   both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
   still sit on another line.

@@ -14,23 +14,12 @@ public struct PublishedAlignment: Decodable, Sendable, Equatable {
         self.alignment = alignment
     }
 
-    private enum CodingKeys: String, CodingKey {
-        case version, alignment
-    }
-
-    /// Decodes the published document, refusing a field it does not have.
-    ///
-    /// - Throws: `DecodingError` for another shape, or ``NarrationAlignment/TimingError``.
-    public init(from decoder: Decoder) throws {
-        try decoder.refuseKeys(otherThan: CodingKeys.self, of: "a published alignment")
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(
-            version: try container.decode(String.self, forKey: .version),
-            alignment: try container.decode(NarrationAlignment.self, forKey: .alignment)
-        )
-    }
-
     /// Decodes `{"version": ..., "alignment": {...}}`, the document the server serves.
+    ///
+    /// A missing field or a value of another type is refused. A field the document does
+    /// not know is read past, at any depth, so that a field the server adds later does
+    /// not stop a build already installed. A key repeated within one object keeps one of
+    /// its values; which one is not promised and may differ between ports.
     ///
     /// - Throws: `DecodingError` for JSON of another shape, or
     ///   ``NarrationAlignment/TimingError``.

@@ -62,6 +62,14 @@ the shape of the Swift API rather than about an answer. The documents the server
 publishes are read as served: `make served` fetches them beside the cases, from the
 endpoints the apps read.
 
+## Reading what the server publishes
+
+`PublishedAlignment.decode` and `RecognizerQuirks.decode` refuse a document that lacks a
+field or holds a value of another type, and read past a field they do not know. An app
+already installed cannot learn a field the server adds later, so such a field must not
+stop it. A key repeated within one object keeps one of its values; which one is not
+promised and may differ between ports.
+
 ## The measure belongs here
 
 A tool that hears our own recordings back before they ship uses this same code,

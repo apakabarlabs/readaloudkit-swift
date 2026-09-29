@@ -10,18 +10,6 @@ private struct PublishedQuirks: Decodable {
     let build: String
     let version: String
     let words: [String: [RecognizerQuirks.Allowance]]
-
-    private enum CodingKeys: String, CodingKey {
-        case build, version, words
-    }
-
-    init(from decoder: Decoder) throws {
-        try decoder.refuseKeys(otherThan: CodingKeys.self, of: "a published hearing table")
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        build = try container.decode(String.self, forKey: .build)
-        version = try container.decode(String.self, forKey: .version)
-        words = try container.decode([String: [RecognizerQuirks.Allowance]].self, forKey: .words)
-    }
 }
 
 /// Explicit spellings that one recognizer may return for particular written words.
@@ -42,9 +30,8 @@ public struct RecognizerQuirks: Sendable {
             self.after = after.map(TranscriptAligner.normalize)
         }
 
-        /// Decodes `{"heard": ..., "after": ...}`, refusing any other field or shape.
+        /// Decodes `{"heard": ..., "after": ...}`, reading past a field it does not know.
         public init(from decoder: Decoder) throws {
-            try decoder.refuseKeys(otherThan: AllowanceCodingKeys.self, of: "an allowance")
             let keyed = try decoder.container(keyedBy: AllowanceCodingKeys.self)
             self.init(
                 heard: try keyed.decode(String.self, forKey: .heard),
@@ -87,8 +74,12 @@ public struct RecognizerQuirks: Sendable {
     /// Decodes the hearing table the server publishes for one recognizer build.
     ///
     /// The document is `{"build": ..., "version": ..., "words": {written: [allowance]}}`,
-    /// each allowance `{"heard": ..., "after": ...}` with `after` optional. Any other
-    /// field, shape or type is refused, and so is a table published for another build.
+    /// each allowance `{"heard": ..., "after": ...}` with `after` optional. A missing
+    /// field, another shape or another type is refused, and so is a table published for
+    /// another build. A field the table does not know is read past, at any depth, so that
+    /// a field the server adds later does not stop a build already installed. A key
+    /// repeated within one object keeps one of its values; which one is not promised and
+    /// may differ between ports.
     ///
     /// - Throws: `DecodingError` for another shape, or ``WrongBuild``.
     public static func decode(_ data: Data, build: String) throws -> Self {
