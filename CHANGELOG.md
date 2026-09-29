@@ -1,24 +1,36 @@
 # Changelog
 
+ReadAloudKit checks a reading aloud of a printed text against that text: which written
+words were said, where in the text the reader is, and when each word sounds in a
+recorded narration.
+
 ## 0.3.0
+
+Two JSON documents your server may publish are read here: a *narration alignment*, the
+start and end time of every word in a recorded reading, and a *hearing table*, the
+spellings one speech-recognition model build is known to write for particular words
+(a modern spelling for an old one, say). `RecognizerQuirks` holds a hearing table.
 
 ### Added
 
-- `Elisions`, the full forms of each elided spelling a work prints, taken from the
-  work's data. A spelling may stand for several full forms, any of which counts as
-  said, and spellings that normalize alike are merged.
-- `PublishedAlignment`, an alignment and the version the server published it under.
-- `UnknownStageState`, the error `StageState(stored:)` throws for a stored value this
-  build cannot read.
-- `NotUTF8`: a served alignment or hearing table is read as UTF-8, with or without a
-  byte order mark, and text in any other encoding is refused with this error. A second
-  byte order mark, a lone surrogate escaped in any string, and a control character
-  written raw inside a string are refused with a `DecodingError`, as JSON forbids them.
+- `Elisions`: the elided spellings your text prints, words with a letter left out such
+  as `tatter’d`, each with the full forms a recogniser writes for it, such as
+  `tattered`. Any of a spelling's full forms counts as saying it. `Elisions.none` lists
+  no elision.
+- `PublishedAlignment`: a narration alignment together with the version string it was
+  published under.
+- `UnknownStageState`, thrown by `StageState(stored:)`; see Changed.
+- `NotUTF8`, thrown when a narration alignment or hearing table is not UTF-8 text. A
+  byte order mark at the start is accepted. A second byte order mark, a lone surrogate
+  escaped in a string, and a control character written raw inside a string are refused
+  with a `DecodingError`, as JSON forbids them.
 
 ### Changed
 
-- `StageState(stored:)` throws `UnknownStageState` for a stored value this build cannot
-  read, where it used to stop the app; what to show instead is the caller's decision.
+- `StageState`, where one stage of a staged reading drill stands, is restored from its
+  stored number by `StageState(stored:)`, which now throws `UnknownStageState` for a
+  number other than 0, 1 or 2, such as one a newer version of your app wrote. It used
+  to crash the app; what to show instead is now your decision.
 
   Before:
 
@@ -32,9 +44,9 @@
   let stage = try StageState(stored: raw)
   ```
 
-- `NarrationAlignment.sonnet: Int` is now `piece: String`, the field and type the
-  server's narration schema publishes: a work names its pieces by their own ids, and
-  a play or a book of stanzas has no sonnet numbers. The JSON key changes with it.
+- `NarrationAlignment.sonnet: Int` is now `piece: String`, and the JSON key `sonnet` is
+  now `piece`: a text names its pieces by ids of its own, and a play or a book of poems
+  has no sonnet numbers.
 
   Before:
 
@@ -58,9 +70,8 @@
 
 - `SpokenLineTracker` keeps the tokenizer it was created with, as `tokenizer`, and
   `progress(heard:)` splits the transcript with it. `progress(heard:tokenizer:)` is
-  gone: a transcript split by another rule than the printed lines could not be held
-  against them word for word, and a tracker built for another script silently read
-  its transcripts as Latin.
+  removed: a transcript split by another rule than the printed lines cannot be matched
+  against them word for word.
 
   Before:
 
@@ -81,18 +92,23 @@
   let progress = tracker.progress(heard: transcript)
   ```
 
-- Nothing picks a language for the caller any more. `SpokenLineTracker(line:…)`,
-  `SpokenLineTracker(lines:…)`, `SpokenLineTracker.wordsPerLine(of:tokenizer:)`,
+- No argument defaults to English or to Latin script any more, so the same code serves
+  texts in other languages. These now take a `tokenizer` with no default:
+  `SpokenLineTracker(line:…)`, `SpokenLineTracker(lines:…)`,
+  `SpokenLineTracker.wordsPerLine(of:tokenizer:)`,
   `NarrationAlignment.timings(for:tokenizer:)` and
-  `NarrationTimeline.estimate(for:duration:tokenizer:weighting:)` take their tokenizer,
-  and the estimate its weighting, with no default; `TranscriptAligner.timings` takes a
-  `weighting` it used to leave to ReadAlign's English default.
+  `NarrationTimeline.estimate(for:duration:tokenizer:weighting:)`. The estimate also
+  takes its `weighting`, the language's rule for how long each word takes to say, with
+  no default, and `TranscriptAligner.timings` gains a required `weighting`. The English
+  weighting that used to be the default is `EnglishSyllableWeighting()` from ReadAlign;
+  to name it, add readalign-swift to your package and `import ReadAlign`.
 
   Before:
 
   ```swift
   SpokenLineTracker(lines: lines)
   NarrationTimeline.estimate(for: passage, duration: duration)
+  TranscriptAligner.timings(for: words, heard: heard, duration: duration)
   ```
 
   After:
@@ -113,14 +129,22 @@
   )
   ```
 
+  `TranscriptAligner.timings` takes its weighting the same way:
+  `TranscriptAligner.timings(for: words, heard: heard, duration: duration, weighting: EnglishSyllableWeighting())`.
+
+  `work` stands for your text's own data, which this library does not supply:
+  `work.interiorMarks` is a `String` of the marks its script keeps inside a word, such
+  as `"'’-"` for English, and `work.elisions` is a `[String: [String]]` from each elided
+  spelling to its full forms, such as `["tatter’d": ["tattered"]]`.
+
 - `SpokenLineTracker(line:…)` and `SpokenLineTracker(lines:…)` take `quirks` with no
-  default, as they take `tokenizer` and `elisions`; pass `.none` for a recogniser with
-  nothing to patch.
-- An elided spelling counts as said only when the heard word is the full form the
-  work's data gives for it, passed as `Elisions`. `SpokenLineTracker(line:…)`,
+  default, as they take `tokenizer` and `elisions`. Pass the `RecognizerQuirks` read from
+  the hearing table for your recogniser, or `.none` if you have none.
+- An elided spelling counts as said only when the heard word is one of the full forms
+  you pass for it as `Elisions`. `SpokenLineTracker(line:…)`,
   `SpokenLineTracker(lines:…)`, `SpokenWords.check` and `SpokenLineTracker.isFaithful`
   take `elisions`. The library no longer restores one or two of the vowels `aeiou` at
-  an apostrophe on its own: that rule was English, and wrong for other languages.
+  an apostrophe on its own: that rule only held for English.
 
   Before:
 
@@ -138,13 +162,14 @@
   )
   ```
 
-- Decoding a `NarrationAlignment` refuses word times that cannot describe one
-  recording read in order, with a `NarrationAlignment.TimingError` naming the word and
-  its printed line: a negative start, an end before its start, or a start before the
-  word ahead of it. Values made in code are not checked.
-- An alignment is read as the server publishes it, `{"version": ..., "alignment": {...}}`,
-  with `PublishedAlignment.decode(_:)`, which returns the version beside the alignment.
-  `NarrationAlignment.decode(_:)` is gone: nothing publishes a bare alignment.
+- Decoding a `NarrationAlignment` throws `NarrationAlignment.TimingError`, naming the
+  word and its printed line, for word times that cannot describe one recording read in
+  order: a negative start, an end before its start, or a start before the previous
+  word's. An alignment built in code is not checked.
+- A narration alignment is read in the shape it is published in,
+  `{"version": ..., "alignment": {...}}`, by `PublishedAlignment.decode(_:)`, which
+  returns the version beside the alignment. `NarrationAlignment.decode(_:)`, which read
+  a bare alignment, is removed.
 
   Before:
 
@@ -158,12 +183,12 @@
   let alignment = try PublishedAlignment.decode(data).alignment
   ```
 
-- A hearing table is read as the server publishes it for one recogniser build,
+- A hearing table is published for one recogniser build and read in the shape
   `{"build": ..., "version": ..., "words": {written: [{"heard": ..., "after": ...}]}}`.
-  `RecognizerQuirks.decode(_:build:)` refuses a table published for another build with
-  `RecognizerQuirks.WrongBuild`. The table keyed by model, `decode(_:model:)`,
-  `UnknownModel` and a bare heard string in place of `{"heard": ...}` are gone: no
-  server publishes them.
+  `RecognizerQuirks.decode(_:build:)` takes the name of the build your app ships, the
+  same name the table was published under, and throws `RecognizerQuirks.WrongBuild` for
+  a table published for another build. `decode(_:model:)`, its `UnknownModel` error, the
+  table keyed by model and a bare heard string in place of `{"heard": ...}` are removed.
 
   Before:
 
@@ -177,24 +202,25 @@
   let quirks = try RecognizerQuirks.decode(data, build: "parakeet-tdt-0.6b-v3-sherpa-int8")
   ```
 
-- Decoding a published alignment or a hearing table refuses a missing field and a
-  value of another type, but reads past a field it does not know, so that a field the
-  server adds later does not stop a build already installed. A word's `line` outside a
-  32-bit integer is refused, as every port refuses it. A key repeated within one object
-  keeps one of its values; which one is not promised and may differ between ports.
-- `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
+  `"parakeet-tdt-0.6b-v3-sherpa-int8"` names one such build, the Parakeet TDT 0.6B v3
+  model quantised to int8 and run by sherpa-onnx; pass the name of yours.
+
+- Decoding a narration alignment or a hearing table throws for a missing field or a
+  value of the wrong type, but skips a field it does not know, so that a field added to
+  the documents later does not break an app already installed. A word's `line` outside
+  the 32-bit integer range is refused. When a key repeats within one JSON object, one of
+  its values is kept; which one is not promised and may differ from readaloudkit-kotlin.
+- `NarrationAlignment.AlignmentError.wordMismatch` gives the printed line of the word on
   both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
   still sit on another line.
-- ReadAlign is required from 0.17.0; nothing this package calls changed between
-  0.13.1 and 0.17.1.
-- Where a character ends and whether it is a letter follow the Unicode data of the
-  system the code runs on; the documentation no longer suggests every platform cuts
-  every character alike.
+- Requires ReadAlign 0.17.0 or later, up from 0.13.1. Nothing ReadAloudKit uses from
+  ReadAlign changed between those versions; the rise only matters if your app pins an
+  older ReadAlign itself.
 
 ### Removed
 
-- `WordTokenizer.latinScript`. The marks a script keeps inside a word come with the
-  work's data: `WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))`.
+- `WordTokenizer.latinScript`. Build the tokenizer from your text's data;
+  `WordTokenizer(interiorMarks: CharacterSet(charactersIn: "'’-"))` is what it was.
 
 ### Fixed
 
