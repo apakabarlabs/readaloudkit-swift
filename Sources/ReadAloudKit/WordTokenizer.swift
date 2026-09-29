@@ -8,6 +8,10 @@ import Foundation
 /// A character, as Unicode clusters it, is a letter or a space by its base: the
 /// scalar its combining marks sit on, past any sign prepended to it. A private-use
 /// character is never a letter, whatever a font draws for it.
+///
+/// Where a character ends and whether it is a letter follow the Unicode data of the
+/// Swift runtime the code runs on, so an older system can cut a newer character
+/// differently.
 public struct WordTokenizer: Sendable {
     /// Marks that remain part of a word after the word has begun.
     public let interiorMarks: CharacterSet

@@ -37,6 +37,10 @@ A written word nothing was heard for is left out of `SpokenWords.check(...).matc
 altogether, so comparing how many matches were faithful with how many there were
 does not show that every word was said; `isComplete` does.
 
+Where a character ends and whether it is a letter follow the Unicode data of the
+platform the code runs on. Two systems of different ages can cut a character Unicode
+has since changed in different places, and nothing here promises otherwise.
+
 Every Swift example in this README is code the tests run, and a test fails when one is
 not.
 
