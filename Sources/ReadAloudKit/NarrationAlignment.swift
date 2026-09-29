@@ -152,7 +152,9 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
     /// Associates the supplied times with the words of a passage.
     ///
     /// The alignment carries the words it was built from. If the passage changes after
-    /// timing, this method refuses it instead of shifting every later highlight.
+    /// timing, this method refuses it instead of shifting every later highlight. Words
+    /// are compared by canonical equivalence, so a letter written with a combining mark
+    /// matches its precomposed spelling, and each timing carries the passage's spelling.
     public func timings(for passage: Passage, tokenizer: WordTokenizer) throws -> [WordTiming] {
         let spoken = tokenizer.words(in: passage)
         guard spoken.count == words.count else {
