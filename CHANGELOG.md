@@ -114,11 +114,11 @@ spellings one speech-recognition model build is known to write for particular wo
   After:
 
   ```swift
-  let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+  let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: text.interiorMarks))
   let tracker = SpokenLineTracker(
       lines: lines,
       quirks: quirks,
-      elisions: Elisions(fullForms: work.elisions),
+      elisions: Elisions(fullForms: text.elisions),
       tokenizer: tokenizer
   )
   let timings = NarrationTimeline.estimate(
@@ -132,10 +132,11 @@ spellings one speech-recognition model build is known to write for particular wo
   `TranscriptAligner.timings` takes its weighting the same way:
   `TranscriptAligner.timings(for: words, heard: heard, duration: duration, weighting: EnglishSyllableWeighting())`.
 
-  `work` stands for your text's own data, which this library does not supply:
-  `work.interiorMarks` is a `String` of the marks its script keeps inside a word, such
-  as `"'’-"` for English, and `work.elisions` is a `[String: [String]]` from each elided
-  spelling to its full forms, such as `["tatter’d": ["tattered"]]`.
+  `text` is a placeholder for the data published with your text, which neither this
+  library nor workcorpus supplies: `text.interiorMarks` is a `String` of the marks its
+  script keeps inside a word, such as `"'’-"` for English, and `text.elisions` is a
+  `[String: [String]]` from each elided spelling to its full forms, such as
+  `["tatter’d": ["tattered"]]`.
 
 - `SpokenLineTracker(line:…)` and `SpokenLineTracker(lines:…)` take `quirks` with no
   default, as they take `tokenizer` and `elisions`. Pass the `RecognizerQuirks` read from
@@ -184,8 +185,12 @@ spellings one speech-recognition model build is known to write for particular wo
   ```
 
 - A hearing table is published for one recogniser build and read in the shape
-  `{"build": ..., "version": ..., "words": {written: [{"heard": ..., "after": ...}]}}`.
-  `RecognizerQuirks.decode(_:build:)` takes the name of the build your app ships, the
+  `{"build": ..., "version": ..., "words": {written: [{"heard": ..., "after": ...}]}}`:
+  `build` is the recogniser build's name; `version` is a string that changes whenever
+  the table does, required but not otherwise used by the library; each key of `words` is
+  a word as printed, and each of its entries allows the recogniser to return `heard` for
+  it, only where the printed word before it is `after`, or anywhere if `after` is left
+  out. `RecognizerQuirks.decode(_:build:)` takes the name of the build your app ships, the
   same name the table was published under, and throws `RecognizerQuirks.WrongBuild` for
   a table published for another build. `decode(_:model:)`, its `UnknownModel` error, the
   table keyed by model and a bare heard string in place of `{"heard": ...}` are removed.

@@ -113,12 +113,12 @@ struct ReadmeTests {
         duration: TimeInterval,
         quirks: RecognizerQuirks
     ) throws -> (tracker: SpokenLineTracker, timings: [WordTiming]) {
-        let work = try Work.sonnets()
-        let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+        let text = try Work.sonnets()
+        let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: text.interiorMarks))
         let tracker = SpokenLineTracker(
             lines: lines,
             quirks: quirks,
-            elisions: Elisions(fullForms: work.elisions),
+            elisions: Elisions(fullForms: text.elisions),
             tokenizer: tokenizer
         )
         let timings = NarrationTimeline.estimate(
