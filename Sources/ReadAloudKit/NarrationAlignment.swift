@@ -32,12 +32,21 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
             self.end = end
         }
 
-        /// Decodes one word, refusing a field the word does not have.
+        /// Decodes one word, refusing a field the word does not have and a line outside
+        /// the range of a 32-bit integer, which a port on another platform could not hold.
         public init(from decoder: Decoder) throws {
             try decoder.refuseKeys(otherThan: WordCodingKeys.self, of: "a word")
             let container = try decoder.container(keyedBy: WordCodingKeys.self)
+            let line = try container.decode(Int.self, forKey: .line)
+            guard Int32(exactly: line) != nil else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .line,
+                    in: container,
+                    debugDescription: "line \(line) is outside a 32-bit integer"
+                )
+            }
             self.init(
-                line: try container.decode(Int.self, forKey: .line),
+                line: line,
                 text: try container.decode(String.self, forKey: .text),
                 start: try container.decode(TimeInterval.self, forKey: .start),
                 end: try container.decode(TimeInterval.self, forKey: .end)

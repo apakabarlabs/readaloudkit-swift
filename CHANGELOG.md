@@ -114,7 +114,8 @@
 
 - Decoding a published alignment, its words, or a hearing table refuses a field it does
   not have with a `DecodingError` naming that field, where it used to skip it: a
-  producer that renamed or added a field is heard from rather than half read.
+  producer that renamed or added a field is heard from rather than half read. A word's
+  `line` outside a 32-bit integer is refused too, as every port refuses it.
 - `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
   both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
   still sit on another line.
