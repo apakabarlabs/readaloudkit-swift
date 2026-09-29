@@ -1,7 +1,3 @@
-COMMENTCENSOR_VERSION ?= v0.3.3
-COMMENTCENSOR_ENV = .build/commentcensor
-COMMENTCENSOR = $(COMMENTCENSOR_ENV)/bin/commentcensor
-
 SERVED_WORK = https://apakabar.fm/api/v1/shadowing/works/shakespeare-sonnets
 SERVED_BUILD = parakeet-tdt-0.6b-v3-sherpa-int8
 RESOURCES = Tests/ReadAloudKitTests/Resources
@@ -28,7 +24,7 @@ docs:
 		--hosting-base-path readaloudkit-swift
 
 comments:
-	$(COMMENTCENSOR) .
+	commentcensor .
 
 lint: comments
 	swiftlint --strict
@@ -46,8 +42,7 @@ clean:
 
 install-tools:
 	brew install swiftlint swift-format
-	python3 -m venv $(COMMENTCENSOR_ENV)
-	$(COMMENTCENSOR_ENV)/bin/pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git@$(COMMENTCENSOR_VERSION)
+	python3 -m pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
 
 install:
 	$(MAKE) install-tools
