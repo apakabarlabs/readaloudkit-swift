@@ -92,6 +92,10 @@
   combining marks sit on, rather than by its first scalar. A sign prepended to a letter,
   such as the Arabic number sign, no longer cuts that letter out of its word, and one
   prepended to a space leaves it a space.
+- `WaveformEnvelope.make(from:bars:)` finds where each bar starts without multiplying
+  the bar by the sample count in `Int`, which trapped once that product outgrew it. The
+  Kotlin port, where `Int` has 32 bits, failed on a recording of 46,342 samples asked for
+  as many bars; cases now hold both ports there.
 - The README showed completeness as `faithful.count == matches.count`, which is true
   when a written word was not heard at all, because such a word makes no match. It
   now shows `SpokenLineTracker.progress(heard:).isComplete`, and a test holds the

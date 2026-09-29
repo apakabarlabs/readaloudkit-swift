@@ -15,14 +15,18 @@ public enum WaveformEnvelope {
 
     /// Builds at most `bars` normalized amplitudes in the range zero through one.
     ///
-    /// Empty samples or a nonpositive bar count produce an empty envelope. Each input
-    /// sample is a linear floating-point amplitude.
+    /// Empty samples or a nonpositive bar count produce an empty envelope. More bars than
+    /// samples, up to `Int.max`, give one bar a sample. Each input sample is a linear
+    /// floating-point amplitude.
     public static func make(from samples: [Float], bars: Int) -> [Double] {
         guard !samples.isEmpty, bars > 0 else { return [] }
         let count = min(bars, samples.count)
+        let firstSample = { (bar: Int) in
+            count.dividingFullWidth(bar.multipliedFullWidth(by: samples.count)).quotient
+        }
         return (0..<count).map { bar in
-            let start = bar * samples.count / count
-            let end = max((bar + 1) * samples.count / count, start + 1)
+            let start = firstSample(bar)
+            let end = max(firstSample(bar + 1), start + 1)
             let squareMean =
                 samples[start..<end].reduce(0.0) { $0 + Double($1 * $1) } / Double(end - start)
             let decibels = decibelsPerBel * log10(max(squareMean.squareRoot(), minimumAmplitude))
