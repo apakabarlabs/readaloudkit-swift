@@ -5,6 +5,7 @@ import Testing
 struct ProgressCases: Codable {
     let pieces: [PiecesCase]
     let stage: [StageCase]
+    let stored: [StoredCase]
 
     static var all: Self {
         get throws { try Cases.loadRefusingUnreadKeys("progress_tests.yaml") }
@@ -23,6 +24,13 @@ struct StageCase: NamedCase {
     let name: String
     let pieces: [String]
     let stage: String
+}
+
+struct StoredCase: NamedCase {
+    let name: String
+    let raw: Int
+    let stage: String?
+    let unknown: Bool?
 }
 
 struct PieceProgressTests {

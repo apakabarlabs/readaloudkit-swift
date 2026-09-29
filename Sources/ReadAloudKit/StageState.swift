@@ -1,3 +1,16 @@
+/// A stored stage state this build does not know, perhaps written by a newer one.
+///
+/// Every port refuses such a value with this error; what to show instead is the
+/// caller's decision.
+public struct UnknownStageState: Error, Equatable, CustomStringConvertible {
+    /// The stored value that was read.
+    public let raw: Int
+
+    public var description: String {
+        "a staged reading holds stage state \(raw), which this build cannot read"
+    }
+}
+
 /// Where one stage of a staged reading stands.
 public enum StageState: Int, Equatable, Sendable {
     /// No piece in the stage has been attempted.
@@ -9,12 +22,9 @@ public enum StageState: Int, Equatable, Sendable {
 
     /// Restores a persisted state.
     ///
-    /// - Precondition: `raw` is `0`, `1`, or `2`. Any other stored value terminates the
-    ///   process because this build cannot interpret the persisted state.
-    public init(stored raw: Int) {
-        guard let state = Self(rawValue: raw) else {
-            fatalError("A staged reading holds stage state \(raw), which this build cannot read.")
-        }
+    /// - Throws: ``UnknownStageState`` when `raw` is not `0`, `1` or `2`.
+    public init(stored raw: Int) throws {
+        guard let state = Self(rawValue: raw) else { throw UnknownStageState(raw: raw) }
         self = state
     }
 

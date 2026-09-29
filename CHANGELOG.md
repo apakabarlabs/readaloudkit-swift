@@ -8,6 +8,9 @@
   work's data. A spelling may stand for several full forms, any of which counts as
   said, and spellings that normalize alike are merged.
 - `PublishedAlignment`, an alignment and the version the server published it under.
+- `UnknownStageState`: `StageState(stored:)` now throws it for a stored value this
+  build cannot read, where it used to stop the app; what to show instead is the
+  caller's decision.
 - `NotUTF8`: a served alignment or hearing table is read as UTF-8, with or without a
   byte order mark, and text in any other encoding is refused with this error. A second
   byte order mark, a lone surrogate escaped in any string, and a control character
