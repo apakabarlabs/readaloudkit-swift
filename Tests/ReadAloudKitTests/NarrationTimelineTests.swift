@@ -8,7 +8,9 @@ struct TimelineCases: Codable {
     let settle: [SettleCase]
     let hold: [HoldCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("timeline_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("timeline_tests.yaml") }
+    }
 }
 
 func expectTimings(_ actual: [WordTiming], equal expected: [[TimeInterval]], in name: String) {
@@ -84,7 +86,7 @@ struct NarrationTimelineTests {
         )
     }
 
-    @Test(arguments: TimelineCases.all.settle)
+    @Test(arguments: try TimelineCases.all.settle)
     func settlesLineEndings(_ example: SettleCase) {
         let settled = NarrationTimeline.settledBetweenLines(
             example.marked,
@@ -95,7 +97,7 @@ struct NarrationTimelineTests {
         expectTimings(settled, equal: example.timings, in: example.name)
     }
 
-    @Test(arguments: TimelineCases.all.hold)
+    @Test(arguments: try TimelineCases.all.hold)
     func holdsWordsOpen(_ example: HoldCase) {
         let held =
             example.limit.map {

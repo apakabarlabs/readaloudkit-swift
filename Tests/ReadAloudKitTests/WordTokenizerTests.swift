@@ -9,7 +9,9 @@ struct TokenizerCases: Codable {
     let segments: [SegmentsCase]
     let passage: [PassageCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("tokenizer_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("tokenizer_tests.yaml") }
+    }
 }
 
 struct WordsCase: NamedCase {
@@ -71,7 +73,7 @@ struct PassageCase: NamedCase {
 }
 
 struct WordTokenizerTests {
-    @Test(arguments: TokenizerCases.all.words)
+    @Test(arguments: try TokenizerCases.all.words)
     func findsTheWords(_ example: WordsCase) {
         let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
         let words = tokenizer.wordRanges(in: example.line).map { String(example.line[$0]) }
@@ -79,7 +81,7 @@ struct WordTokenizerTests {
         #expect(words == example.words)
     }
 
-    @Test(arguments: TokenizerCases.all.segments)
+    @Test(arguments: try TokenizerCases.all.segments)
     func cutsTheSegments(_ example: SegmentsCase) {
         let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
         let segments = tokenizer.segments(in: example.line)
@@ -88,7 +90,7 @@ struct WordTokenizerTests {
         #expect(segments.map(\.text).joined() == example.line)
     }
 
-    @Test(arguments: TokenizerCases.all.passage)
+    @Test(arguments: try TokenizerCases.all.passage)
     func numbersThePassage(_ example: PassageCase) {
         let tokenizer = Cases.tokenizer(interiorMarks: example.interiorMarks)
         let spoken = tokenizer.words(in: Passage(lines: example.lines))

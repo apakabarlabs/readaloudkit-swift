@@ -28,7 +28,7 @@ struct WaveformCase: NamedCase {
 }
 
 struct WaveformEnvelopeTests {
-    @Test(arguments: AudioCases.all.waveform)
+    @Test(arguments: try AudioCases.all.waveform)
     func keepsTheShape(_ example: WaveformCase) {
         let envelope = WaveformEnvelope.make(from: example.built, bars: example.bars)
         let expected = example.expected

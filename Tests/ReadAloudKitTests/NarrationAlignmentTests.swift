@@ -7,7 +7,9 @@ struct AlignmentCases: Codable {
     let decode: [DecodeCase]
     let timings: [TimingsCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("alignment_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("alignment_tests.yaml") }
+    }
 }
 
 struct ExpectedTimingError: Codable, Sendable {
@@ -121,7 +123,7 @@ struct TimingsCase: NamedCase {
 }
 
 struct NarrationAlignmentTests {
-    @Test(arguments: AlignmentCases.all.decode)
+    @Test(arguments: try AlignmentCases.all.decode)
     func readsWhatAServerPublishes(_ example: DecodeCase) throws {
         let data = try example.data
         if let expected = example.timingError {
@@ -137,7 +139,7 @@ struct NarrationAlignmentTests {
         #expect(try PublishedAlignment.decode(data) == expected.published)
     }
 
-    @Test(arguments: AlignmentCases.all.timings)
+    @Test(arguments: try AlignmentCases.all.timings)
     func marriesTimesToWords(_ example: TimingsCase) throws {
         let alignment = NarrationAlignment(piece: "1", duration: 10, words: example.words)
         let passage = Passage(lines: example.lines)

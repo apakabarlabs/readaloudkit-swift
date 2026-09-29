@@ -7,21 +7,25 @@ import Yams
 enum Cases {
     static let within = 0.000_000_001
 
+    struct MissingResource: Error, CustomStringConvertible {
+        let name: String
+        var description: String { "\(name) is not among the test resources" }
+    }
+
     struct UnreadKeys: Error, CustomStringConvertible {
         let keys: [String]
         var description: String { "keys no case reads: \(keys.joined(separator: ", "))" }
     }
 
-    static func loadRefusingUnreadKeys<T: Codable>(_ name: String, as type: T.Type = T.self) -> T {
-        do {
-            guard let url = Bundle.module.url(forResource: name, withExtension: nil) else {
-                fatalError("\(name) is not among the test resources")
-            }
-            let text = try String(contentsOf: url, encoding: .utf8)
-            return try decodeRefusingUnreadKeys(text, at: name)
-        } catch {
-            fatalError("\(name) cannot be read: \(error)")
+    static func loadRefusingUnreadKeys<T: Codable>(
+        _ name: String,
+        as type: T.Type = T.self
+    ) throws -> T {
+        guard let url = Bundle.module.url(forResource: name, withExtension: nil) else {
+            throw MissingResource(name: name)
         }
+        let text = try String(contentsOf: url, encoding: .utf8)
+        return try decodeRefusingUnreadKeys(text, at: name)
     }
 
     static func decodeRefusingUnreadKeys<T: Codable>(

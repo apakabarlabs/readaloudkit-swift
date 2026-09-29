@@ -7,7 +7,9 @@ struct SpokenWordsCases: Codable {
     let tests: [SpokenWordsCase]
     let faithful: [FaithfulCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("spoken_words_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("spoken_words_tests.yaml") }
+    }
 }
 
 struct ExpectedMatch: Codable, Sendable, Equatable {
@@ -39,7 +41,7 @@ struct FaithfulCase: NamedCase {
 }
 
 struct SpokenWordsTests {
-    @Test(arguments: SpokenWordsCases.all.tests)
+    @Test(arguments: try SpokenWordsCases.all.tests)
     func acceptsOnlyFaithfulWords(_ example: SpokenWordsCase) {
         let checked = SpokenWords.check(
             expected: example.expected,
@@ -52,7 +54,7 @@ struct SpokenWordsTests {
         #expect(checked.faithful == example.faithful)
     }
 
-    @Test(arguments: SpokenWordsCases.all.faithful)
+    @Test(arguments: try SpokenWordsCases.all.faithful)
     func tellsAFaithfulSpelling(_ example: FaithfulCase) {
         let faithful = SpokenLineTracker.isFaithful(
             example.heard,

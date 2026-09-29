@@ -3,7 +3,7 @@ import Testing
 @testable import ReadAloudKit
 
 struct StageStateTests {
-    @Test(arguments: ProgressCases.all.stage)
+    @Test(arguments: try ProgressCases.all.stage)
     func readsTheStageFromItsPieces(_ example: StageCase) throws {
         let pieces = try example.pieces.map(PieceProgressState.named)
 

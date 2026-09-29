@@ -6,7 +6,9 @@ struct AudioCases: Codable {
     let gain: [GainCase]
     let waveform: [WaveformCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("audio_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("audio_tests.yaml") }
+    }
 }
 
 struct GainCase: NamedCase {
@@ -39,7 +41,7 @@ struct GainCase: NamedCase {
 }
 
 struct PlaybackEnvelopeTests {
-    @Test(arguments: AudioCases.all.gain)
+    @Test(arguments: try AudioCases.all.gain)
     func fadesTheEdges(_ example: GainCase) {
         #expect((example.gains == nil) != (example.everyFrame == nil), "pins frames or all frames")
         for pair in example.gains ?? [] {

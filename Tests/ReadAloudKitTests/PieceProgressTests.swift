@@ -6,7 +6,9 @@ struct ProgressCases: Codable {
     let pieces: [PiecesCase]
     let stage: [StageCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("progress_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("progress_tests.yaml") }
+    }
 }
 
 struct PiecesCase: NamedCase {
@@ -24,7 +26,7 @@ struct StageCase: NamedCase {
 }
 
 struct PieceProgressTests {
-    @Test(arguments: ProgressCases.all.pieces)
+    @Test(arguments: try ProgressCases.all.pieces)
     func keepsPiecesInTheirPositions(_ example: PiecesCase) throws {
         let states = PieceProgress.states(
             total: example.total,

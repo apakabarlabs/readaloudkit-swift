@@ -6,7 +6,9 @@ import Testing
 struct QuirksCases: Codable {
     let tests: [QuirksCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("quirks_tests.yaml", as: Self.self).tests
+    static var all: [QuirksCase] {
+        get throws { try Cases.loadRefusingUnreadKeys("quirks_tests.yaml", as: Self.self).tests }
+    }
 }
 
 struct QuirkQuery: Codable, Sendable {
@@ -52,7 +54,7 @@ struct QuirksCase: NamedCase {
 }
 
 struct RecognizerQuirksTests {
-    @Test(arguments: QuirksCases.all)
+    @Test(arguments: try QuirksCases.all)
     func allowsWhatTheTableSays(_ example: QuirksCase) throws {
         if let expected = example.wrongBuild {
             let refusal = RecognizerQuirks.WrongBuild(

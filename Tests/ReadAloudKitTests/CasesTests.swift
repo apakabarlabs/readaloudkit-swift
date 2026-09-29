@@ -23,4 +23,11 @@ struct CasesTests {
             try Cases.decodeRefusingUnreadKeys(misspelt, at: "case", as: TrackerCase.self)
         }
     }
+
+    @Test("a case file that cannot be read fails the tests that read it, not the run")
+    func anUnreadableFileThrows() {
+        #expect(throws: Cases.MissingResource.self) {
+            try Cases.loadRefusingUnreadKeys("no_such_tests.yaml", as: TrackerCases.self)
+        }
+    }
 }

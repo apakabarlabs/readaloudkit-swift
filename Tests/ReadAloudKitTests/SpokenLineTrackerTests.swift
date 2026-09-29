@@ -5,7 +5,9 @@ import Testing
 struct TrackerCases: Codable {
     let tests: [TrackerCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("tracker_tests.yaml", as: Self.self).tests
+    static var all: [TrackerCase] {
+        get throws { try Cases.loadRefusingUnreadKeys("tracker_tests.yaml", as: Self.self).tests }
+    }
 }
 
 struct ExpectedAttempt: Codable, Sendable {
@@ -45,7 +47,7 @@ struct TrackerCase: NamedCase {
 }
 
 struct SpokenLineTrackerTests {
-    @Test(arguments: TrackerCases.all)
+    @Test(arguments: try TrackerCases.all)
     func checksTheReading(_ example: TrackerCase) throws {
         let tracker = example.tracker
         #expect(tracker.lineLengths == example.lineLengths)

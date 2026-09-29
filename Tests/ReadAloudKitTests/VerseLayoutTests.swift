@@ -6,7 +6,9 @@ struct LayoutCases: Codable {
     let `break`: [BreakCase]
     let run: [RunCase]
 
-    static let all = Cases.loadRefusingUnreadKeys("layout_tests.yaml", as: Self.self)
+    static var all: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("layout_tests.yaml") }
+    }
 }
 
 struct BreakCase: NamedCase {
@@ -41,7 +43,7 @@ struct VerseLayoutTests {
             .starts
     }
 
-    @Test(arguments: LayoutCases.all.break)
+    @Test(arguments: try LayoutCases.all.break)
     func breaksWhereTheCaseSays(_ example: BreakCase) {
         let starts = VerseLayoutPlanner.breakLine(
             words: example.words,
@@ -53,7 +55,7 @@ struct VerseLayoutTests {
         #expect(starts == example.starts)
     }
 
-    @Test(arguments: LayoutCases.all.run)
+    @Test(arguments: try LayoutCases.all.run)
     func measuresRunsWithSpaces(_ example: RunCase) {
         let width = VerseLayoutPlanner.run(
             example.words,
