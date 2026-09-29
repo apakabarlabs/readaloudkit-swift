@@ -5,18 +5,26 @@ recorded audio back to the words on the page.
 
 ## Start with a reading check
 
-Create a ``SpokenLineTracker`` from the printed lines, then pass it the complete
-recognized transcript. A piece is complete only when every printed word is
-faithful; alignment may be loose enough to pair a near miss without crediting it.
+Create a ``SpokenLineTracker`` from the printed lines and from what the work's data
+says about its language, then pass it the complete recognized transcript. A piece is
+complete only when every printed word is faithful; alignment may be loose enough to
+pair a near miss without crediting it.
 
 ```swift
+let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+let elisions = Elisions(fullForms: work.elisions)
 let tracker = SpokenLineTracker(
-    lines: ["From fairest creatures", "we desire increase"],
-    tokenizer: .latinScript
+    lines: ["Will be a tatter’d weed", "of small worth held"],
+    elisions: elisions,
+    tokenizer: tokenizer
 )
-let progress = tracker.progress(heard: "From fairest creatures we desire increase")
+let progress = tracker.progress(heard: "will be a tattered weed of small worth held")
 let completed = progress.isComplete
 ```
+
+`work` stands for the work's data: the marks its script keeps inside a word, and the
+full form of each elided spelling it prints. ``WordTokenizer`` and ``Elisions`` hold no
+language of their own.
 
 Use ``RecognizerQuirks`` only for repeatable output of a named recognizer build.
 Quirks are not pronunciation rules, and a table published for another build is
@@ -42,6 +50,7 @@ together so one awkward line does not determine the page by itself.
 
 - ``SpokenLineTracker``
 - ``SpokenWords``
+- ``Elisions``
 - ``RecognizerQuirks``
 - ``WordCheck``
 - ``WordAttempt``

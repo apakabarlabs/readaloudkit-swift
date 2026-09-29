@@ -69,6 +69,12 @@ enum Cases {
         WordTokenizer(interiorMarks: CharacterSet(charactersIn: interiorMarks))
     }
 
+    static let sonnetsTokenizer = tokenizer(interiorMarks: "'’-")
+
+    static func elisions(_ fullForms: [String: String]?) -> Elisions {
+        fullForms.map(Elisions.init(fullForms:)) ?? .none
+    }
+
     static func quirks(_ allowances: [String: [AllowanceEntry]]?) -> RecognizerQuirks {
         allowances.map { RecognizerQuirks(allowances: $0.mapValues { $0.map(\.allowance) }) }
             ?? .none

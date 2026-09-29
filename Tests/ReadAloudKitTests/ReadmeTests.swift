@@ -3,10 +3,30 @@ import Testing
 
 @testable import ReadAloudKit
 
+private struct Work: Decodable {
+    let interiorMarks: String
+    let elisions: [String: String]
+
+    private enum CodingKeys: String, CodingKey {
+        case elisions
+        case interiorMarks = "interior_marks"
+    }
+
+    static let sonnets = #"{"interior_marks": "'’-", "elisions": {"tatter’d": "tattered"}}"#
+}
+
 struct ReadmeTests {
-    private func saidEveryWord(of lines: [String], in transcript: String) -> Bool {
+    private func saidEveryWord(of lines: [String], in transcript: String) throws -> Bool {
+        let work = try JSONDecoder().decode(Work.self, from: Data(Work.sonnets.utf8))
         let quirks = RecognizerQuirks.none
-        let tracker = SpokenLineTracker(lines: lines, quirks: quirks, tokenizer: .latinScript)
+        let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+        let elisions = Elisions(fullForms: work.elisions)
+        let tracker = SpokenLineTracker(
+            lines: lines,
+            quirks: quirks,
+            elisions: elisions,
+            tokenizer: tokenizer
+        )
         let saidEveryWord = tracker.progress(heard: transcript).isComplete
         return saidEveryWord
     }
@@ -34,11 +54,11 @@ struct ReadmeTests {
     }
 
     @Test("the README's completeness check tells a dropped word from a reading said whole")
-    func readmeUsageCatchesADroppedWord() {
-        let lines = ["From fairest creatures", "we desire increase"]
+    func readmeUsageCatchesADroppedWord() throws {
+        let lines = ["Will be a tatter’d weed", "of small worth held"]
 
-        #expect(saidEveryWord(of: lines, in: "From fairest creatures we desire increase"))
-        #expect(!saidEveryWord(of: lines, in: "From fairest creatures desire increase"))
+        #expect(try saidEveryWord(of: lines, in: "will be a tattered weed of small worth held"))
+        #expect(try !saidEveryWord(of: lines, in: "will be a tattered weed of worth held"))
     }
 
     private static func trimmedLines(of text: String) -> [String] {

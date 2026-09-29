@@ -26,12 +26,21 @@ line the server holds, and nobody can say which is right.
 ## Use
 
 ```swift
-let tracker = SpokenLineTracker(lines: lines, quirks: quirks, tokenizer: .latinScript)
+let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+let elisions = Elisions(fullForms: work.elisions)
+let tracker = SpokenLineTracker(
+    lines: lines,
+    quirks: quirks,
+    elisions: elisions,
+    tokenizer: tokenizer
+)
 let saidEveryWord = tracker.progress(heard: transcript).isComplete
 ```
 
-The tokenizer is the language's: `.latinScript` keeps apostrophes and hyphens inside
-a word, and a text in another script passes its own. Nothing here picks one for you.
+`work` stands for the data that comes with the work, not with this library: the marks
+its script keeps inside a word, such as an apostrophe or a hyphen, and the full form of
+each elided spelling it prints, such as `tattered` for `tatter’d`. Nothing here knows a
+language or picks one for you, and an elision the work does not list is not restored.
 
 A written word nothing was heard for is left out of `SpokenWords.check(...).matches`
 altogether, so comparing how many matches were faithful with how many there were

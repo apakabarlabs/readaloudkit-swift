@@ -25,6 +25,7 @@ struct SpokenWordsCase: NamedCase {
     let expected: [String]
     let heard: [String]
     let quirks: [String: [AllowanceEntry]]?
+    let elisions: [String: String]?
     let matches: [ExpectedMatch]
     let faithful: Set<Int>
 }
@@ -33,6 +34,7 @@ struct FaithfulCase: NamedCase {
     let name: String
     let heard: String
     let written: String
+    let elisions: [String: String]?
     let faithful: Bool
 }
 
@@ -42,7 +44,8 @@ struct SpokenWordsTests {
         let checked = SpokenWords.check(
             expected: example.expected,
             heard: example.heard,
-            quirks: Cases.quirks(example.quirks)
+            quirks: Cases.quirks(example.quirks),
+            elisions: Cases.elisions(example.elisions)
         )
 
         #expect(checked.matches.map(ExpectedMatch.init) == example.matches)
@@ -51,7 +54,11 @@ struct SpokenWordsTests {
 
     @Test(arguments: SpokenWordsCases.all.faithful)
     func tellsAFaithfulSpelling(_ example: FaithfulCase) {
-        let faithful = SpokenLineTracker.isFaithful(example.heard, to: example.written)
+        let faithful = SpokenLineTracker.isFaithful(
+            example.heard,
+            to: example.written,
+            elisions: Cases.elisions(example.elisions)
+        )
 
         #expect(faithful == example.faithful)
     }
@@ -62,13 +69,15 @@ struct SpokenWordsTests {
         let tracker = SpokenLineTracker(
             line: "O heir of love",
             quirks: quirks,
-            tokenizer: .latinScript
+            elisions: .none,
+            tokenizer: Cases.sonnetsTokenizer
         )
         let progress = tracker.progress(heard: "oh air of dove")
         let checked = SpokenWords.check(
             expected: ["O", "heir", "of", "love"],
             heard: ["oh", "air", "of", "dove"],
-            quirks: quirks
+            quirks: quirks,
+            elisions: .none
         )
         let faithful = progress.checks.indices.filter { progress.checks[$0] == .correct }
         let byCheck = checked.matches.indices

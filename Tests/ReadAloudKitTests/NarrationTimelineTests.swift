@@ -60,7 +60,7 @@ struct HoldCase: NamedCase {
 
     var marked: [WordTiming] {
         let line = Array(repeating: "word", count: spans.count).joined(separator: " ")
-        let words = WordTokenizer.latinScript.words(in: Passage(lines: [line]))
+        let words = Cases.sonnetsTokenizer.words(in: Passage(lines: [line]))
         return zip(words, spans).map { WordTiming(word: $0, start: $1[0], end: $1[1]) }
     }
 }
@@ -79,7 +79,7 @@ struct NarrationTimelineTests {
         NarrationTimeline.estimate(
             for: passage,
             duration: duration,
-            tokenizer: .latinScript,
+            tokenizer: Cases.sonnetsTokenizer,
             weighting: EnglishSyllableWeighting()
         )
     }
@@ -112,7 +112,7 @@ struct NarrationTimelineTests {
     @Test("every word gets a timing inside the recording")
     func coversTheRecording() throws {
         let estimated = timings
-        #expect(estimated.count == WordTokenizer.latinScript.words(in: passage).count)
+        #expect(estimated.count == Cases.sonnetsTokenizer.words(in: passage).count)
 
         let first = try #require(estimated.first)
         let last = try #require(estimated.last)
@@ -131,7 +131,7 @@ struct NarrationTimelineTests {
     @Test("the narrator breathes at the line end")
     func pausesBetweenLines() {
         let estimated = timings
-        let firstLineCount = WordTokenizer.latinScript.wordRanges(in: passage.lines[0]).count
+        let firstLineCount = Cases.sonnetsTokenizer.wordRanges(in: passage.lines[0]).count
         let acrossBreak = estimated[firstLineCount].start - estimated[firstLineCount - 1].end
         let insideLine = estimated[1].start - estimated[0].end
 
@@ -152,7 +152,7 @@ struct NarrationTimelineTests {
         let estimated = NarrationTimeline.estimate(
             for: passage,
             duration: duration,
-            tokenizer: .latinScript,
+            tokenizer: Cases.sonnetsTokenizer,
             weighting: EvenWeighting()
         )
         let first = try #require(estimated.first)
@@ -230,7 +230,7 @@ struct NarrationTimelineTests {
         let estimated = NarrationTimeline.estimate(
             for: passage,
             duration: 0,
-            tokenizer: .latinScript,
+            tokenizer: Cases.sonnetsTokenizer,
             weighting: EnglishSyllableWeighting()
         )
 

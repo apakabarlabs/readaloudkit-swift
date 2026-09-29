@@ -31,11 +31,14 @@ public enum SpokenWords {
     /// Aligns heard words with expected words and applies explicit recognizer quirks.
     ///
     /// `threshold` decides which words may be compared; acceptance still requires a
-    /// faithful spelling or an explicit quirk.
+    /// faithful spelling, the full form `elisions` gives for an elided one, or an
+    /// explicit quirk. A listed full form or quirk also pairs its words however unlike
+    /// they look.
     public static func check(
         expected: [String],
         heard: [String],
         quirks: RecognizerQuirks,
+        elisions: Elisions,
         threshold: Double = SpokenLineTracker.closeSimilarityThreshold
     ) -> Check {
         let matches = TranscriptAligner.pair(
@@ -44,6 +47,7 @@ public enum SpokenWords {
             threshold: threshold
         ) { written, said, preceding in
             quirks.allows(said, forWritten: written, after: preceding)
+                || elisions.fullForm(of: written) == TranscriptAligner.normalize(said)
         }
         var faithful: Set<Int> = []
         for (index, match) in matches.enumerated() {
@@ -51,7 +55,7 @@ public enum SpokenWords {
             let written = expected[match.expected].joined()
             let before =
                 match.expected.lowerBound > 0 ? expected[match.expected.lowerBound - 1] : nil
-            if SpokenLineTracker.isFaithful(said, to: written)
+            if SpokenLineTracker.isFaithful(said, to: written, elisions: elisions)
                 || quirks.allows(said, forWritten: written, after: before)
             {
                 faithful.insert(index)

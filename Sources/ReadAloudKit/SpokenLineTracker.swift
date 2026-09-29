@@ -89,6 +89,9 @@ public struct SpokenLineTracker: Sendable {
     /// The number of expected words in each printed line.
     public let lineLengths: [Int]
 
+    /// The full forms of the elided spellings the work prints, from the work's data.
+    public let elisions: Elisions
+
     /// Splits both the printed lines and every transcript checked against them.
     public let tokenizer: WordTokenizer
 
@@ -96,21 +99,24 @@ public struct SpokenLineTracker: Sendable {
     public init(
         line: String,
         quirks: RecognizerQuirks = .none,
+        elisions: Elisions,
         tokenizer: WordTokenizer
     ) {
-        self.init(lines: [line], quirks: quirks, tokenizer: tokenizer)
+        self.init(lines: [line], quirks: quirks, elisions: elisions, tokenizer: tokenizer)
     }
 
     /// Creates a tracker that checks all printed lines as one continuous attempt.
     public init(
         lines: [String],
         quirks: RecognizerQuirks = .none,
+        elisions: Elisions,
         tokenizer: WordTokenizer
     ) {
         let words = lines.map { line in tokenizer.wordRanges(in: line).map { String(line[$0]) } }
         expected = words.flatMap(\.self)
         lineLengths = words.map(\.count)
         self.quirks = quirks
+        self.elisions = elisions
         self.tokenizer = tokenizer
     }
 
@@ -150,7 +156,12 @@ public struct SpokenLineTracker: Sendable {
     /// against the printed words.
     public func progress(heard transcript: String) -> Progress {
         let heard = tokenizer.wordRanges(in: transcript).map { String(transcript[$0]) }
-        let checked = SpokenWords.check(expected: expected, heard: heard, quirks: quirks)
+        let checked = SpokenWords.check(
+            expected: expected,
+            heard: heard,
+            quirks: quirks,
+            elisions: elisions
+        )
         var checks = [WordCheck](repeating: .wrong, count: expected.count)
         for (index, match) in checked.matches.enumerated() {
             let check: WordCheck = checked.faithful.contains(index) ? .correct : .close
@@ -168,31 +179,15 @@ public struct SpokenLineTracker: Sendable {
 
     /// Reports whether a heard spelling faithfully represents a written word.
     ///
-    /// Case and punctuation are ignored. A vowel omitted at an apostrophe may be
-    /// restored, but other changes remain different words.
-    public static func isFaithful(_ heard: String, to expected: String) -> Bool {
+    /// Case and punctuation are ignored. An elided spelling also counts as said when the
+    /// heard word is the full form `elisions` gives for it; nothing else is restored.
+    public static func isFaithful(
+        _ heard: String,
+        to expected: String,
+        elisions: Elisions
+    ) -> Bool {
         let said = TranscriptAligner.normalize(heard)
-        return said == TranscriptAligner.normalize(expected) || writesOut(said, elidedIn: expected)
-    }
-
-    private static func writesOut(_ said: String, elidedIn written: String) -> Bool {
-        let parts =
-            written
-            .components(separatedBy: CharacterSet(charactersIn: "’'"))
-            .map(TranscriptAligner.normalize)
-        guard parts.count > 1 else { return false }
-
-        let vowels = "aeiou"
-        let lettersAnApostropheMayStandFor = 1...2
-        var rest = Substring(said)
-        for (index, part) in parts.enumerated() {
-            guard rest.hasPrefix(part) else { return false }
-            rest = rest.dropFirst(part.count)
-            guard index < parts.count - 1 else { break }
-            let restored = rest.prefix { vowels.contains($0) }
-            guard lettersAnApostropheMayStandFor.contains(restored.count) else { return false }
-            rest = rest.dropFirst(restored.count)
-        }
-        return rest.isEmpty
+        return said == TranscriptAligner.normalize(expected)
+            || said == elisions.fullForm(of: expected)
     }
 }

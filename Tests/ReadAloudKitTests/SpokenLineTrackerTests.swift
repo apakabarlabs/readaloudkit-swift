@@ -18,6 +18,7 @@ struct TrackerCase: NamedCase {
     let lines: [String]
     let quirks: [String: [AllowanceEntry]]?
     let interiorMarks: String
+    let elisions: [String: String]?
     let lineLengths: [Int]
     let heard: String?
     let checks: [WordCheck]?
@@ -27,7 +28,7 @@ struct TrackerCase: NamedCase {
     let untried: [String]?
 
     private enum CodingKeys: String, CodingKey {
-        case name, lines, quirks, heard, checks, complete, attempts, untried
+        case name, lines, quirks, elisions, heard, checks, complete, attempts, untried
         case interiorMarks = "interior_marks"
         case allWrong = "all_wrong"
         case lineLengths = "line_lengths"
@@ -37,6 +38,7 @@ struct TrackerCase: NamedCase {
         SpokenLineTracker(
             lines: lines,
             quirks: Cases.quirks(quirks),
+            elisions: Cases.elisions(elisions),
             tokenizer: Cases.tokenizer(interiorMarks: interiorMarks)
         )
     }

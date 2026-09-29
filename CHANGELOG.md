@@ -2,6 +2,17 @@
 
 ## 0.3.0
 
+### Added
+
+- `Elisions`, the full form of each elided spelling a work prints, taken from the
+  work's data.
+- `PublishedAlignment`, an alignment and the version the server published it under.
+
+### Removed
+
+- `WordTokenizer.latinScript`. The marks a script keeps inside a word come with the
+  work's data: `WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))`.
+
 ### Changed
 
 - `NarrationAlignment.sonnet: Int` is now `piece: String`, the field and type the
@@ -53,8 +64,7 @@
   `NarrationAlignment.timings(for:tokenizer:)` and
   `NarrationTimeline.estimate(for:duration:tokenizer:weighting:)` take their tokenizer,
   and the estimate its weighting, with no default; `TranscriptAligner.timings` takes a
-  `weighting` it used to leave to ReadAlign's English default. `WordTokenizer.latinScript`
-  remains, to be passed by name.
+  `weighting` it used to leave to ReadAlign's English default.
 
   Before:
 
@@ -66,10 +76,32 @@
   After:
 
   ```swift
-  SpokenLineTracker(lines: lines, tokenizer: .latinScript)
+  let tokenizer = WordTokenizer(interiorMarks: CharacterSet(charactersIn: work.interiorMarks))
+  SpokenLineTracker(lines: lines, elisions: Elisions(fullForms: work.elisions), tokenizer: tokenizer)
   NarrationTimeline.estimate(
       for: passage, duration: duration,
-      tokenizer: .latinScript, weighting: EnglishSyllableWeighting()
+      tokenizer: tokenizer, weighting: EnglishSyllableWeighting()
+  )
+  ```
+
+- An elided spelling counts as said only when the heard word is the full form the
+  work's data gives for it, passed as `Elisions`. `SpokenLineTracker(line:…)`,
+  `SpokenLineTracker(lines:…)`, `SpokenWords.check` and `SpokenLineTracker.isFaithful`
+  take `elisions`. The library no longer restores one or two of the vowels `aeiou` at
+  an apostrophe on its own: that rule was English, and wrong for other languages.
+
+  Before:
+
+  ```swift
+  SpokenLineTracker.isFaithful("tattered", to: "tatter’d")
+  ```
+
+  After:
+
+  ```swift
+  SpokenLineTracker.isFaithful(
+      "tattered", to: "tatter’d",
+      elisions: Elisions(fullForms: ["tatter’d": "tattered"])
   )
   ```
 

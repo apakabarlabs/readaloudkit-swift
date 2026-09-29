@@ -16,15 +16,11 @@ public struct WordTokenizer: Sendable {
     /// Marks that remain part of a word after the word has begun.
     public let interiorMarks: CharacterSet
 
-    /// Creates a tokenizer for a space-delimited writing system.
+    /// Creates a tokenizer for a space-delimited writing system, keeping inside a word the
+    /// marks the work's data names for its script, such as an apostrophe or a hyphen.
     public init(interiorMarks: CharacterSet) {
         self.interiorMarks = interiorMarks
     }
-
-    /// A Latin-script tokenizer that preserves apostrophes, elisions, and hyphens.
-    public static let latinScript = Self(
-        interiorMarks: CharacterSet(charactersIn: "'’-")
-    )
 
     /// Returns all spoken words with their positions in the passage.
     public func words(in passage: Passage) -> [SpokenWord] {
