@@ -46,19 +46,23 @@ struct DecodeCase: NamedCase {
     let name: String
     let served: String?
     let json: String?
+    let encoding: String?
     let published: ExpectedPublished?
     let malformed: Bool?
+    let notUTF8: Bool?
     let timingError: ExpectedTimingError?
 
     private enum CodingKeys: String, CodingKey {
-        case name, served, json, published, malformed
+        case name, served, json, encoding, published, malformed
+        case notUTF8 = "not_utf8"
         case timingError = "timing_error"
     }
 
     var data: Data {
         get throws {
             if let served { return try Cases.served(served) }
-            return Data(try #require(json, "\(name): a case reads served or json").utf8)
+            let json = try #require(json, "\(name): a case reads served or json")
+            return try Cases.bytes(of: json, in: encoding)
         }
     }
 }
@@ -133,6 +137,10 @@ struct NarrationAlignmentTests {
         }
         if example.malformed == true {
             #expect(throws: DecodingError.self) { try PublishedAlignment.decode(data) }
+            return
+        }
+        if example.notUTF8 == true {
+            #expect(throws: NotUTF8()) { try PublishedAlignment.decode(data) }
             return
         }
         let expected = try #require(example.published, "a readable case pins the document")

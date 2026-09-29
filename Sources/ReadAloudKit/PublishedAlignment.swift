@@ -19,11 +19,12 @@ public struct PublishedAlignment: Decodable, Sendable, Equatable {
     /// A missing field or a value of another type is refused. A field the document does
     /// not know is read past, at any depth, so that a field the server adds later does
     /// not stop a build already installed. A key repeated within one object keeps one of
-    /// its values; which one is not promised and may differ between ports.
+    /// its values; which one is not promised and may differ between ports. The document is
+    /// read as UTF-8, with or without a byte order mark.
     ///
-    /// - Throws: `DecodingError` for JSON of another shape, or
-    ///   ``NarrationAlignment/TimingError``.
+    /// - Throws: ``NotUTF8`` for text in another encoding, `DecodingError` for JSON of
+    ///   another shape, or ``NarrationAlignment/TimingError``.
     public static func decode(_ data: Data) throws -> Self {
-        try JSONDecoder().decode(Self.self, from: data)
+        try JSONDecoder().decode(Self.self, from: try ServedText.utf8(data))
     }
 }

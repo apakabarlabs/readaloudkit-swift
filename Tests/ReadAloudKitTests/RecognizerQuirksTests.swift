@@ -27,16 +27,19 @@ struct QuirksCase: NamedCase {
     let name: String
     let served: String?
     let table: String?
+    let encoding: String?
     let build: String?
     let allowances: [String: [AllowanceEntry]]?
     let wrongBuild: WrongBuildCase?
     let malformed: Bool?
+    let notUTF8: Bool?
     let empty: Bool?
     let queries: [QuirkQuery]?
 
     private enum CodingKeys: String, CodingKey {
-        case name, served, table, build, allowances, malformed, empty, queries
+        case name, served, table, encoding, build, allowances, malformed, empty, queries
         case wrongBuild = "wrong_build"
+        case notUTF8 = "not_utf8"
     }
 
     func quirks() throws -> RecognizerQuirks {
@@ -44,7 +47,7 @@ struct QuirksCase: NamedCase {
         if let served {
             data = try Cases.served(served)
         } else if let table {
-            data = Data(table.utf8)
+            data = try Cases.bytes(of: table, in: encoding)
         } else {
             return Cases.quirks(allowances)
         }
@@ -66,6 +69,10 @@ struct RecognizerQuirksTests {
         }
         if example.malformed == true {
             #expect(throws: DecodingError.self) { try example.quirks() }
+            return
+        }
+        if example.notUTF8 == true {
+            #expect(throws: NotUTF8()) { try example.quirks() }
             return
         }
         let quirks = try example.quirks()

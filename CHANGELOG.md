@@ -8,6 +8,8 @@
   work's data. A spelling may stand for several full forms, any of which counts as
   said, and spellings that normalize alike are merged.
 - `PublishedAlignment`, an alignment and the version the server published it under.
+- `NotUTF8`: a served alignment or hearing table is read as UTF-8, with or without a
+  byte order mark, and text in any other encoding is refused with this error.
 
 ### Changed
 

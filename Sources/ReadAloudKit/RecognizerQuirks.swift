@@ -79,11 +79,14 @@ public struct RecognizerQuirks: Sendable {
     /// another build. A field the table does not know is read past, at any depth, so that
     /// a field the server adds later does not stop a build already installed. A key
     /// repeated within one object keeps one of its values; which one is not promised and
-    /// may differ between ports.
+    /// may differ between ports. The table is read as UTF-8, with or without a byte order
+    /// mark.
     ///
-    /// - Throws: `DecodingError` for another shape, or ``WrongBuild``.
+    /// - Throws: ``NotUTF8`` for text in another encoding, `DecodingError` for another
+    ///   shape, or ``WrongBuild``.
     public static func decode(_ data: Data, build: String) throws -> Self {
-        let published = try JSONDecoder().decode(PublishedQuirks.self, from: data)
+        let text = try ServedText.utf8(data)
+        let published = try JSONDecoder().decode(PublishedQuirks.self, from: text)
         guard published.build == build else {
             throw WrongBuild(requested: build, published: published.build)
         }

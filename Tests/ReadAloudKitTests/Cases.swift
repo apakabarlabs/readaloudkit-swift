@@ -40,6 +40,29 @@ enum Cases {
         return decoded
     }
 
+    struct UnknownEncoding: Error, CustomStringConvertible {
+        let name: String
+        var description: String { "\(name) is not an encoding the cases name" }
+    }
+
+    static func bytes(of text: String, in encoding: String?) throws -> Data {
+        let utf8ByteOrderMark = Data([0xEF, 0xBB, 0xBF])
+        let utf16LittleEndianByteOrderMark = Data([0xFF, 0xFE])
+        let encoded: Data? =
+            switch encoding ?? "utf-8" {
+            case "utf-8": text.data(using: .utf8)
+            case "utf-8-bom": text.data(using: .utf8).map { utf8ByteOrderMark + $0 }
+            case "utf-16le": text.data(using: .utf16LittleEndian)
+            case "utf-16le-bom":
+                text.data(using: .utf16LittleEndian).map { utf16LittleEndianByteOrderMark + $0 }
+            case "utf-16be": text.data(using: .utf16BigEndian)
+            case "latin-1": text.data(using: .isoLatin1)
+            default: nil
+            }
+        guard let encoded else { throw UnknownEncoding(name: encoding ?? "utf-8") }
+        return encoded
+    }
+
     static func served(_ name: String) throws -> Data {
         let url = try #require(
             Bundle.module.url(forResource: name, withExtension: nil),
