@@ -3,7 +3,9 @@ import Foundation
 /// Word-timing metadata supplied for a recorded narration.
 ///
 /// Unlike an estimated timeline, an alignment preserves the producer's supplied start
-/// and end for every listed word. The type trusts the producer to validate the spans.
+/// and end for every listed word. Decoding refuses times that cannot describe one
+/// recording read in order: a negative start, an end before its start, or a word that
+/// starts before the word listed ahead of it. Values created in code are not checked.
 public struct NarrationAlignment: Codable, Sendable, Equatable {
     /// One word and its supplied interval in the recording.
     public struct Word: Codable, Sendable, Equatable {
@@ -44,26 +46,90 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
         self.recording = recording
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case piece, duration, words, recording
+    }
+
+    /// Decodes an alignment and refuses times that are out of order or out of bounds.
+    ///
+    /// - Throws: ``TimingError`` naming the first word whose times cannot stand.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let words = try container.decode([Word].self, forKey: .words)
+        try Self.check(words)
+        self.init(
+            piece: try container.decode(String.self, forKey: .piece),
+            duration: try container.decode(TimeInterval.self, forKey: .duration),
+            words: words,
+            recording: try container.decodeIfPresent(String.self, forKey: .recording)
+        )
+    }
+
+    /// Supplied word times that cannot describe one recording read in order.
+    public enum TimingError: LocalizedError, Equatable {
+        /// The word at `word`, on printed line `line`, starts before the recording does.
+        case negativeStart(word: Int, line: Int)
+        /// The word at `word`, on printed line `line`, ends before it starts.
+        case endBeforeStart(word: Int, line: Int)
+        /// The word at `word`, on printed line `line`, starts before the word ahead of it.
+        case startBeforePrevious(word: Int, line: Int)
+
+        public var errorDescription: String? {
+            switch self {
+            case let .negativeStart(word, line):
+                return "Word \(word) on line \(line) starts before the recording."
+
+            case let .endBeforeStart(word, line):
+                return "Word \(word) on line \(line) ends before it starts."
+
+            case let .startBeforePrevious(word, line):
+                return "Word \(word) on line \(line) starts before the word ahead of it."
+            }
+        }
+    }
+
+    private static func check(_ words: [Word]) throws {
+        for (index, word) in words.enumerated() {
+            guard word.start >= 0 else {
+                throw TimingError.negativeStart(word: index, line: word.line)
+            }
+            guard word.end >= word.start else {
+                throw TimingError.endBeforeStart(word: index, line: word.line)
+            }
+            guard index == 0 || word.start >= words[index - 1].start else {
+                throw TimingError.startBeforePrevious(word: index, line: word.line)
+            }
+        }
+    }
+
     /// A supplied alignment no longer describes the requested passage.
     public enum AlignmentError: LocalizedError, Equatable {
         /// The passage and alignment contain different numbers of spoken words.
         case wordCountMismatch(expected: Int, found: Int)
         /// The word at `index` or its line differs between the passage and alignment.
-        case wordMismatch(index: Int, expected: String, found: String)
+        case wordMismatch(
+            index: Int,
+            expected: String,
+            found: String,
+            expectedLine: Int,
+            foundLine: Int
+        )
 
         public var errorDescription: String? {
             switch self {
             case let .wordCountMismatch(expected, found):
                 return "The alignment lists \(found) words, the text has \(expected)."
 
-            case let .wordMismatch(index, expected, found):
-                return
-                    "Word \(index) is \"\(found)\" in the alignment and \"\(expected)\" in the text."
+            case let .wordMismatch(index, expected, found, expectedLine, foundLine):
+                return "Word \(index) is \"\(found)\" on line \(foundLine) in the alignment "
+                    + "and \"\(expected)\" on line \(expectedLine) in the text."
             }
         }
     }
 
     /// Decodes an alignment from its JSON representation.
+    ///
+    /// - Throws: `DecodingError` for JSON of another shape, or ``TimingError``.
     public static func decode(_ data: Data) throws -> Self {
         try JSONDecoder().decode(Self.self, from: data)
     }
@@ -72,10 +138,7 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
     ///
     /// The alignment carries the words it was built from. If the passage changes after
     /// timing, this method refuses it instead of shifting every later highlight.
-    public func timings(
-        for passage: Passage,
-        tokenizer: WordTokenizer = .latinScript
-    ) throws -> [WordTiming] {
+    public func timings(for passage: Passage, tokenizer: WordTokenizer) throws -> [WordTiming] {
         let spoken = tokenizer.words(in: passage)
         guard spoken.count == words.count else {
             throw AlignmentError.wordCountMismatch(expected: spoken.count, found: words.count)
@@ -86,7 +149,9 @@ public struct NarrationAlignment: Codable, Sendable, Equatable {
                 throw AlignmentError.wordMismatch(
                     index: index,
                     expected: word.text,
-                    found: measured.text
+                    found: measured.text,
+                    expectedLine: word.lineIndex,
+                    foundLine: measured.line
                 )
             }
             return WordTiming(word: word, start: measured.start, end: measured.end)

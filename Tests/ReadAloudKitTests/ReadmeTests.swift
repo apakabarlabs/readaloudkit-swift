@@ -5,13 +5,17 @@ import Testing
 
 struct ReadmeTests {
     private static let usage = """
-        let tracker = SpokenLineTracker(lines: printedLines, quirks: quirks)
+        let tracker = SpokenLineTracker(lines: printedLines, quirks: quirks, tokenizer: .latinScript)
         let saidEveryWord = tracker.progress(heard: transcript).isComplete
         """
 
     private func saidEveryWord(of printedLines: [String], in transcript: String) -> Bool {
         let quirks = RecognizerQuirks.none
-        let tracker = SpokenLineTracker(lines: printedLines, quirks: quirks)
+        let tracker = SpokenLineTracker(
+            lines: printedLines,
+            quirks: quirks,
+            tokenizer: .latinScript
+        )
         let saidEveryWord = tracker.progress(heard: transcript).isComplete
         return saidEveryWord
     }

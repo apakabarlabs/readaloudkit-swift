@@ -3,12 +3,12 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct TokenizerCases: Decodable {
+struct TokenizerCases: Codable {
     let words: [WordsCase]
     let segments: [SegmentsCase]
     let passage: [PassageCase]
 
-    static let all = Cases.load("tokenizer_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("tokenizer_tests.yaml", as: Self.self)
 }
 
 struct WordsCase: NamedCase {
@@ -23,7 +23,7 @@ struct WordsCase: NamedCase {
     }
 }
 
-struct ExpectedSegment: Decodable, Sendable {
+struct ExpectedSegment: Codable, Sendable {
     let index: Int?
     let opening: String?
     let word: String?

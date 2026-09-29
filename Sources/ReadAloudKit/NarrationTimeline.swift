@@ -27,15 +27,16 @@ public enum NarrationTimeline {
 
     /// Estimates word timings by speech weight, reserving a pause at each line break.
     ///
-    /// The default weighting is English-specific. An empty passage, nonpositive
-    /// duration, or weighting with no positive total produces an empty timeline.
+    /// The tokenizer and the weighting belong to the language of the passage. An empty
+    /// passage, nonpositive duration, or weighting with no positive total produces an
+    /// empty timeline.
     ///
     /// - Precondition: `weighting` returns a nonnegative weight for every word.
     public static func estimate(
         for passage: Passage,
         duration: TimeInterval,
-        tokenizer: WordTokenizer = .latinScript,
-        weighting: some SpeechWeighting = EnglishSyllableWeighting()
+        tokenizer: WordTokenizer,
+        weighting: some SpeechWeighting
     ) -> [WordTiming] {
         let words = tokenizer.words(in: passage)
         guard !words.isEmpty, duration > 0 else { return [] }

@@ -10,7 +10,10 @@ recognized transcript. A piece is complete only when every printed word is
 faithful; alignment may be loose enough to pair a near miss without crediting it.
 
 ```swift
-let tracker = SpokenLineTracker(lines: ["From fairest creatures", "we desire increase"])
+let tracker = SpokenLineTracker(
+    lines: ["From fairest creatures", "we desire increase"],
+    tokenizer: .latinScript
+)
 let progress = tracker.progress(heard: "From fairest creatures we desire increase")
 let completed = progress.isComplete
 ```

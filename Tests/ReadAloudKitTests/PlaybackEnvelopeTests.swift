@@ -2,11 +2,11 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct AudioCases: Decodable {
+struct AudioCases: Codable {
     let gain: [GainCase]
     let waveform: [WaveformCase]
 
-    static let all = Cases.load("audio_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("audio_tests.yaml", as: Self.self)
 }
 
 struct GainCase: NamedCase {
@@ -41,6 +41,7 @@ struct GainCase: NamedCase {
 struct PlaybackEnvelopeTests {
     @Test(arguments: AudioCases.all.gain)
     func fadesTheEdges(_ example: GainCase) {
+        #expect((example.gains == nil) != (example.everyFrame == nil), "pins frames or all frames")
         for pair in example.gains ?? [] {
             #expect(example.gain(at: Int(pair[0])) == Float(pair[1]), "frame \(pair[0])")
         }

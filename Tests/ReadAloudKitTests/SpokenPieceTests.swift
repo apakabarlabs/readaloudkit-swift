@@ -13,7 +13,7 @@ struct SpokenPieceTests {
 
     @Test("the states come back apart line by line")
     func statesAreCutBackIntoLines() {
-        let tracker = SpokenLineTracker(lines: quatrain)
+        let tracker = SpokenLineTracker(lines: quatrain, tokenizer: .latinScript)
         let progress = tracker.progress(heard: quatrain.joined(separator: " "))
         let states = progress.wordStates
 
@@ -21,6 +21,13 @@ struct SpokenPieceTests {
             #expect(tracker.wordStates(states, forLineAt: index).count == length)
         }
         #expect(tracker.wordStates(states, forLineAt: 4).isEmpty)
+    }
+
+    @Test("a check shows as the state a reader sees")
+    func checksShowAsStates() {
+        let progress = SpokenLineTracker.Progress(checks: [.correct, .close, .wrong])
+
+        #expect(progress.wordStates == [.said, .close, .missed])
     }
 
     @Test("a tracker keeps the tokenizer it was made with")

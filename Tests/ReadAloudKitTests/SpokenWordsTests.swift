@@ -1,20 +1,31 @@
+import ReadAlign
 import Testing
 
 @testable import ReadAloudKit
 
-struct SpokenWordsCases: Decodable {
+struct SpokenWordsCases: Codable {
     let tests: [SpokenWordsCase]
     let faithful: [FaithfulCase]
 
-    static let all = Cases.load("spoken_words_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("spoken_words_tests.yaml", as: Self.self)
+}
+
+struct ExpectedMatch: Codable, Sendable, Equatable {
+    let expected: [Int]
+    let heard: [Int]
+
+    init(_ match: WordMatch) {
+        expected = [match.expected.lowerBound, match.expected.upperBound]
+        heard = [match.heard.lowerBound, match.heard.upperBound]
+    }
 }
 
 struct SpokenWordsCase: NamedCase {
     let name: String
     let expected: [String]
     let heard: [String]
-    let quirks: [String: [RecognizerQuirks.Allowance]]?
-    let matches: Int?
+    let quirks: [String: [AllowanceEntry]]?
+    let matches: [ExpectedMatch]
     let faithful: Set<Int>
 }
 
@@ -34,9 +45,7 @@ struct SpokenWordsTests {
             quirks: Cases.quirks(example.quirks)
         )
 
-        if let matches = example.matches {
-            #expect(checked.matches.count == matches)
-        }
+        #expect(checked.matches.map(ExpectedMatch.init) == example.matches)
         #expect(checked.faithful == example.faithful)
     }
 
@@ -50,7 +59,11 @@ struct SpokenWordsTests {
     @Test("the reader's word checks are that same pass")
     func progressAgrees() {
         let quirks = RecognizerQuirks(allowances: ["heir": ["air"], "O": ["oh"]])
-        let tracker = SpokenLineTracker(line: "O heir of love", quirks: quirks)
+        let tracker = SpokenLineTracker(
+            line: "O heir of love",
+            quirks: quirks,
+            tokenizer: .latinScript
+        )
         let progress = tracker.progress(heard: "oh air of dove")
         let checked = SpokenWords.check(
             expected: ["O", "heir", "of", "love"],

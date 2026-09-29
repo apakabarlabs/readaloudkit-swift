@@ -2,11 +2,11 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct LayoutCases: Decodable {
+struct LayoutCases: Codable {
     let `break`: [BreakCase]
     let run: [RunCase]
 
-    static let all = Cases.load("layout_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("layout_tests.yaml", as: Self.self)
 }
 
 struct BreakCase: NamedCase {

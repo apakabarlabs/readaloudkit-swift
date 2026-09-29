@@ -96,7 +96,7 @@ public struct SpokenLineTracker: Sendable {
     public init(
         line: String,
         quirks: RecognizerQuirks = .none,
-        tokenizer: WordTokenizer = .latinScript
+        tokenizer: WordTokenizer
     ) {
         self.init(lines: [line], quirks: quirks, tokenizer: tokenizer)
     }
@@ -105,7 +105,7 @@ public struct SpokenLineTracker: Sendable {
     public init(
         lines: [String],
         quirks: RecognizerQuirks = .none,
-        tokenizer: WordTokenizer = .latinScript
+        tokenizer: WordTokenizer
     ) {
         let words = lines.map { line in tokenizer.wordRanges(in: line).map { String(line[$0]) } }
         expected = words.flatMap(\.self)
@@ -115,12 +115,7 @@ public struct SpokenLineTracker: Sendable {
     }
 
     /// Counts spoken words in each line using `tokenizer`.
-    public static func wordsPerLine(
-        of lines: [String],
-        tokenizer: WordTokenizer = .latinScript
-    )
-        -> [Int]
-    {
+    public static func wordsPerLine(of lines: [String], tokenizer: WordTokenizer) -> [Int] {
         lines.map { tokenizer.wordRanges(in: $0).count }
     }
 

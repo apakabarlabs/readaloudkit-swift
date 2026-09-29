@@ -1,13 +1,13 @@
 {
-  "originHash" : "ab289b36398fa96b92ef0beec70054517018b63dcd419de25383b9065eccf8fb",
+  "originHash" : "7d9bd24ca83b98cc65d42209c270439293513eab2e2b08c959e24ac32552d04d",
   "pins" : [
     {
       "identity" : "readalign-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apakabarlabs/readalign-swift",
       "state" : {
-        "revision" : "d568270ad3d1165fcdbc822c1ca32d83d8f1eb02",
-        "version" : "0.13.1"
+        "revision" : "bdc9f27e095ab115040b0aad918cfea838b23d2f",
+        "version" : "0.17.1"
       }
     },
     {

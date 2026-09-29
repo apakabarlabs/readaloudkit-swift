@@ -4,28 +4,18 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct TimelineCases: Decodable {
+struct TimelineCases: Codable {
     let settle: [SettleCase]
     let hold: [HoldCase]
 
-    static let all = Cases.load("timeline_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("timeline_tests.yaml", as: Self.self)
 }
 
-struct ExpectedEdge: Decodable, Sendable {
-    let word: Int
-    let start: TimeInterval?
-    let end: TimeInterval?
-    let within: TimeInterval?
-
-    func check(_ timing: WordTiming, in name: String) {
-        let tolerance = within ?? 0
-        #expect(start != nil || end != nil, "\(name): word \(word) pins nothing")
-        if let start {
-            #expect(abs(timing.start - start) <= tolerance, "\(name): start of word \(word)")
-        }
-        if let end {
-            #expect(abs(timing.end - end) <= tolerance, "\(name): end of word \(word)")
-        }
+func expectTimings(_ actual: [WordTiming], equal expected: [[TimeInterval]], in name: String) {
+    #expect(actual.count == expected.count, "\(name): one timing per word")
+    for (index, (timing, span)) in zip(actual, expected).enumerated() {
+        #expect(Cases.close(timing.start, span[0]), "\(name): start of word \(index)")
+        #expect(Cases.close(timing.end, span[1]), "\(name): end of word \(index)")
     }
 }
 
@@ -37,11 +27,10 @@ struct SettleCase: NamedCase {
     let loud: [[Int]]
     let rate: Double
     let marks: [[TimeInterval]]
-    let want: [ExpectedEdge]
-    let joined: [Int]?
+    let timings: [[TimeInterval]]
 
     private enum CodingKeys: String, CodingKey {
-        case name, lines, level, loud, rate, marks, want, joined
+        case name, lines, level, loud, rate, marks, timings
         case sampleCount = "sample_count"
     }
 
@@ -53,7 +42,7 @@ struct SettleCase: NamedCase {
         return samples
     }
 
-    var timings: [WordTiming] {
+    var marked: [WordTiming] {
         let words = WordTokenizer.latinScript.words(in: Passage(lines: lines))
         return zip(words, marks).map { WordTiming(word: $0, start: $1[0], end: $1[1]) }
     }
@@ -64,9 +53,9 @@ struct HoldCase: NamedCase {
     let spans: [[TimeInterval]]
     let duration: TimeInterval
     let limit: TimeInterval?
-    let ends: [ExpectedEdge]
+    let timings: [[TimeInterval]]
 
-    var timings: [WordTiming] {
+    var marked: [WordTiming] {
         let line = Array(repeating: "word", count: spans.count).joined(separator: " ")
         let words = WordTokenizer.latinScript.words(in: Passage(lines: [line]))
         return zip(words, spans).map { WordTiming(word: $0, start: $1[0], end: $1[1]) }
@@ -84,27 +73,23 @@ struct NarrationTimelineTests {
     private let duration: TimeInterval = 12
 
     private var timings: [WordTiming] {
-        NarrationTimeline.estimate(for: passage, duration: duration)
+        NarrationTimeline.estimate(
+            for: passage,
+            duration: duration,
+            tokenizer: .latinScript,
+            weighting: EnglishSyllableWeighting()
+        )
     }
 
     @Test(arguments: TimelineCases.all.settle)
     func settlesLineEndings(_ example: SettleCase) {
         let settled = NarrationTimeline.settledBetweenLines(
-            example.timings,
+            example.marked,
             samples: example.samples,
             sampleRate: example.rate
         )
 
-        for edge in example.want {
-            edge.check(settled[edge.word], in: example.name)
-        }
-        for word in example.joined ?? [] {
-            #expect(settled[word].end == settled[word + 1].start)
-        }
-        for (earlier, later) in zip(settled, settled.dropFirst()) {
-            #expect(later.start >= earlier.end)
-            #expect(later.end > later.start)
-        }
+        expectTimings(settled, equal: example.timings, in: example.name)
     }
 
     @Test(arguments: TimelineCases.all.hold)
@@ -112,15 +97,13 @@ struct NarrationTimelineTests {
         let held =
             example.limit.map {
                 NarrationTimeline.heldToTheNextWord(
-                    example.timings,
+                    example.marked,
                     duration: example.duration,
                     limit: $0
                 )
-            } ?? NarrationTimeline.heldToTheNextWord(example.timings, duration: example.duration)
+            } ?? NarrationTimeline.heldToTheNextWord(example.marked, duration: example.duration)
 
-        for edge in example.ends {
-            edge.check(held[edge.word], in: example.name)
-        }
+        expectTimings(held, equal: example.timings, in: example.name)
     }
 
     @Test("every word gets a timing inside the recording")
@@ -163,13 +146,11 @@ struct NarrationTimelineTests {
 
     @Test("a weighting that treats every word alike splits the time evenly")
     func acceptsAnotherWeighting() throws {
-        struct FlatWeighting: SpeechWeighting {
-            func weight(of _: String) -> Double { 1 }
-        }
         let estimated = NarrationTimeline.estimate(
             for: passage,
             duration: duration,
-            weighting: FlatWeighting()
+            tokenizer: .latinScript,
+            weighting: EvenWeighting()
         )
         let first = try #require(estimated.first)
         let last = try #require(estimated.last)
@@ -243,6 +224,13 @@ struct NarrationTimelineTests {
 
     @Test("a recording of unknown length yields no timings")
     func refusesZeroDuration() {
-        #expect(NarrationTimeline.estimate(for: passage, duration: 0).isEmpty)
+        let estimated = NarrationTimeline.estimate(
+            for: passage,
+            duration: 0,
+            tokenizer: .latinScript,
+            weighting: EnglishSyllableWeighting()
+        )
+
+        #expect(estimated.isEmpty)
     }
 }

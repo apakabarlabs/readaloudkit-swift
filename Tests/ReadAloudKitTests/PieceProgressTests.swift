@@ -2,11 +2,11 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct ProgressCases: Decodable {
+struct ProgressCases: Codable {
     let pieces: [PiecesCase]
     let stage: [StageCase]
 
-    static let all = Cases.load("progress_tests.yaml", as: Self.self)
+    static let all = Cases.loadRefusingUnreadKeys("progress_tests.yaml", as: Self.self)
 }
 
 struct PiecesCase: NamedCase {

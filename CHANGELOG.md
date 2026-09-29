@@ -2,8 +2,6 @@
 
 ## 0.3.0
 
-Unreleased.
-
 ### Changed
 
 - `NarrationAlignment.sonnet: Int` is now `piece: String`, the field and type the
@@ -50,6 +48,41 @@ Unreleased.
   let progress = tracker.progress(heard: transcript)
   ```
 
+- Nothing picks a language for the caller any more. `SpokenLineTracker(line:…)`,
+  `SpokenLineTracker(lines:…)`, `SpokenLineTracker.wordsPerLine(of:tokenizer:)`,
+  `NarrationAlignment.timings(for:tokenizer:)` and
+  `NarrationTimeline.estimate(for:duration:tokenizer:weighting:)` take their tokenizer,
+  and the estimate its weighting, with no default; `TranscriptAligner.timings` takes a
+  `weighting` it used to leave to ReadAlign's English default. `WordTokenizer.latinScript`
+  remains, to be passed by name.
+
+  Before:
+
+  ```swift
+  SpokenLineTracker(lines: lines)
+  NarrationTimeline.estimate(for: passage, duration: duration)
+  ```
+
+  After:
+
+  ```swift
+  SpokenLineTracker(lines: lines, tokenizer: .latinScript)
+  NarrationTimeline.estimate(
+      for: passage, duration: duration,
+      tokenizer: .latinScript, weighting: EnglishSyllableWeighting()
+  )
+  ```
+
+- Decoding a `NarrationAlignment` refuses word times that cannot describe one
+  recording read in order, with a `NarrationAlignment.TimingError` naming the word and
+  its printed line: a negative start, an end before its start, or a start before the
+  word ahead of it. Values made in code are not checked.
+- `NarrationAlignment.AlignmentError.wordMismatch` names the printed line of the word on
+  both sides, as `expectedLine` and `foundLine`, since a word can match in spelling and
+  still sit on another line.
+- ReadAlign is required from 0.17.0; nothing this package calls changed between
+  0.13.1 and 0.17.1.
+
 ### Fixed
 
 - The README showed completeness as `faithful.count == matches.count`, which is true
@@ -62,6 +95,7 @@ Unreleased.
 - The cases the tests hold the library to are YAML under
   `Tests/ReadAloudKitTests/Resources/`, one file per subject, so every port reads the
   same ones. Swift keeps only the runners and the tests about the shape of its API.
+  Every case pins its whole result, and a key no runner reads fails the run.
 - `VerseLayoutPlanner.plan` no longer carries a branch no input can reach.
 
 ## 0.2.0

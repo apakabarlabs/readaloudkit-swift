@@ -3,43 +3,83 @@ import Testing
 
 @testable import ReadAloudKit
 
-struct AlignmentCases: Decodable {
-    let tests: [AlignmentCase]
+struct AlignmentCases: Codable {
+    let decode: [DecodeCase]
+    let timings: [TimingsCase]
 
-    static let all = Cases.load("alignment_tests.yaml", as: Self.self).tests
+    static let all = Cases.loadRefusingUnreadKeys("alignment_tests.yaml", as: Self.self)
 }
 
-struct ExpectedTiming: Decodable, Sendable {
-    let index: Int
+struct ExpectedTimingError: Codable, Sendable {
+    let kind: String
+    let word: Int
+    let line: Int
+
+    var error: NarrationAlignment.TimingError {
+        get throws {
+            switch kind {
+            case "negative_start": return .negativeStart(word: word, line: line)
+            case "end_before_start": return .endBeforeStart(word: word, line: line)
+            case "start_before_previous": return .startBeforePrevious(word: word, line: line)
+            default: throw ExpectationFailed(description: "\(kind) is not a timing error")
+            }
+        }
+    }
+}
+
+struct ExpectationFailed: Error, CustomStringConvertible {
+    let description: String
+}
+
+struct DecodeCase: NamedCase {
+    let name: String
+    let json: String
+    let alignment: NarrationAlignment?
+    let malformed: Bool?
+    let timingError: ExpectedTimingError?
+
+    private enum CodingKeys: String, CodingKey {
+        case name, json, alignment, malformed
+        case timingError = "timing_error"
+    }
+}
+
+struct ExpectedTiming: Codable, Sendable, Equatable {
     let text: String
     let line: Int
     let start: TimeInterval
     let end: TimeInterval
 }
 
-struct CountMismatch: Decodable, Sendable {
+struct CountMismatch: Codable, Sendable {
     let expected: Int
     let found: Int
 }
 
-struct WordMismatch: Decodable, Sendable {
+struct WordMismatch: Codable, Sendable {
     let index: Int
     let expected: String
     let found: String
+    let expectedLine: Int
+    let foundLine: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case index, expected, found
+        case expectedLine = "expected_line"
+        case foundLine = "found_line"
+    }
 }
 
-struct AlignmentCase: NamedCase {
+struct TimingsCase: NamedCase {
     let name: String
     let lines: [String]
     let words: [NarrationAlignment.Word]
-    let count: Int?
-    let timingsAt: [ExpectedTiming]?
+    let timings: [ExpectedTiming]?
     let wordCountMismatch: CountMismatch?
     let wordMismatch: WordMismatch?
 
     private enum CodingKeys: String, CodingKey {
-        case name, lines, words, count
-        case timingsAt = "timings_at"
+        case name, lines, words, timings
         case wordCountMismatch = "word_count_mismatch"
         case wordMismatch = "word_mismatch"
     }
@@ -52,7 +92,9 @@ struct AlignmentCase: NamedCase {
             return .wordMismatch(
                 index: mismatch.index,
                 expected: mismatch.expected,
-                found: mismatch.found
+                found: mismatch.found,
+                expectedLine: mismatch.expectedLine,
+                foundLine: mismatch.foundLine
             )
         }
         return nil
@@ -60,25 +102,43 @@ struct AlignmentCase: NamedCase {
 }
 
 struct NarrationAlignmentTests {
-    @Test(arguments: AlignmentCases.all)
-    func marriesTimesToWords(_ example: AlignmentCase) throws {
+    @Test(arguments: AlignmentCases.all.decode)
+    func readsWhatAServerPublishes(_ example: DecodeCase) throws {
+        let data = Data(example.json.utf8)
+        if let expected = example.timingError {
+            let error = try expected.error
+            #expect(throws: error) { try NarrationAlignment.decode(data) }
+            return
+        }
+        if example.malformed == true {
+            #expect(throws: DecodingError.self) { try NarrationAlignment.decode(data) }
+            return
+        }
+        let expected = try #require(example.alignment, "a readable case pins the alignment")
+        #expect(try NarrationAlignment.decode(data) == expected)
+    }
+
+    @Test(arguments: AlignmentCases.all.timings)
+    func marriesTimesToWords(_ example: TimingsCase) throws {
         let alignment = NarrationAlignment(piece: "1", duration: 10, words: example.words)
         let passage = Passage(lines: example.lines)
         if let refusal = example.refusal {
-            #expect(throws: refusal) { try alignment.timings(for: passage) }
+            #expect(throws: refusal) {
+                try alignment.timings(for: passage, tokenizer: .latinScript)
+            }
             return
         }
-        let timings = try alignment.timings(for: passage)
-        if let count = example.count {
-            #expect(timings.count == count)
+        let timings = try alignment.timings(for: passage, tokenizer: .latinScript)
+        let expected = try #require(example.timings, "a fitting case pins its timings")
+        let actual = timings.map { timing in
+            ExpectedTiming(
+                text: timing.word.text,
+                line: timing.word.lineIndex,
+                start: timing.start,
+                end: timing.end
+            )
         }
-        for expected in example.timingsAt ?? [] {
-            let timing = timings[expected.index]
-            #expect(timing.word.text == expected.text)
-            #expect(timing.word.lineIndex == expected.line)
-            #expect(timing.start == expected.start)
-            #expect(timing.end == expected.end)
-        }
+        #expect(actual == expected)
     }
 
     @Test("alignment survives a round trip through json")
@@ -92,20 +152,5 @@ struct NarrationAlignmentTests {
         let data = try JSONEncoder().encode(original)
 
         #expect(try NarrationAlignment.decode(data) == original)
-    }
-
-    @Test("the alignment a server publishes is read as it is served")
-    func readsTheServedShape() throws {
-        let served = Data(
-            """
-            {"piece": "18", "duration": 4.5, "recording": "narration-018.mp3",
-             "words": [{"line": 0, "text": "Shall", "start": 0.5, "end": 0.8}]}
-            """.utf8
-        )
-        let alignment = try NarrationAlignment.decode(served)
-
-        #expect(alignment.piece == "18")
-        #expect(alignment.recording == "narration-018.mp3")
-        #expect(alignment.words == [.init(line: 0, text: "Shall", start: 0.5, end: 0.8)])
     }
 }
