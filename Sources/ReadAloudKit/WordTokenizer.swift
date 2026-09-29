@@ -4,6 +4,9 @@ import Foundation
 ///
 /// Which marks may live inside a word is supplied by the language. A writing system
 /// without spaces needs another tokenizer rather than a different set of marks.
+///
+/// A character, as Unicode clusters it, is a letter or a space by its base: the
+/// scalar its combining marks sit on, past any sign prepended to it.
 public struct WordTokenizer: Sendable {
     /// Marks that remain part of a word after the word has begun.
     public let interiorMarks: CharacterSet
@@ -81,7 +84,7 @@ public struct WordTokenizer: Sendable {
         for (index, range) in ranges.enumerated() {
             let untilNextWordsMarks = index + 1 < ranges.count ? openings[index + 1] : line.endIndex
             let after = line[range.upperBound..<untilNextWordsMarks]
-            let closingMarks = after.prefix { !$0.isWhitespace }
+            let closingMarks = after.prefix { !$0.base.properties.isWhitespace }
             segments.append(
                 LineSegment(
                     wordIndex: index,
@@ -102,7 +105,7 @@ public struct WordTokenizer: Sendable {
     )
         -> String.Index
     {
-        guard let lastSpace = line[gap].lastIndex(where: \.isWhitespace) else {
+        guard let lastSpace = line[gap].lastIndex(where: \.base.properties.isWhitespace) else {
             let marksStandWithTheWordBefore = !isFirstWord
             return marksStandWithTheWordBefore ? gap.upperBound : gap.lowerBound
         }
@@ -131,7 +134,7 @@ public struct WordTokenizer: Sendable {
     }
 
     private func isWordCharacter(_ character: Character, hasStarted: Bool) -> Bool {
-        if character.isLetter { return true }
+        if character.base.properties.isAlphabetic { return true }
         return hasStarted && character.unicodeScalars.allSatisfy(interiorMarks.contains)
     }
 
@@ -144,7 +147,7 @@ public struct WordTokenizer: Sendable {
         var end = range.upperBound
         while end > range.lowerBound {
             let previous = line.index(before: end)
-            if line[previous].isLetter { break }
+            if line[previous].base.properties.isAlphabetic { break }
             end = previous
         }
         return range.lowerBound..<end
