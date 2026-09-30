@@ -10,6 +10,7 @@ FETCH = curl --fail --silent --show-error
 sync-yaml:
 	mkdir -p ../readaloudkit-kotlin/src/test/resources
 	cp Tests/ReadAloudKitTests/Resources/*.yaml Tests/ReadAloudKitTests/Resources/*.json ../readaloudkit-kotlin/src/test/resources/
+	cp Tests/ReadAloudKitTests/Resources/quirks_tests.yaml Tests/ReadAloudKitTests/Resources/served_hearing.json Tests/ReadAloudKitTests/Resources/spoken_words_tests.yaml Tests/ReadAloudKitTests/Resources/tokenizer_tests.yaml Tests/ReadAloudKitTests/Resources/tracker_tests.yaml ../flowbot/src/flowbot/shadowing/tests/readaloudkit/
 
 build: lint test-build test docs
 	swift build
