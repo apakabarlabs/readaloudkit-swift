@@ -5,7 +5,11 @@ FETCH = curl --fail --silent --show-error
 
 .DEFAULT_GOAL := build
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools served
+.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools served sync-yaml
+
+sync-yaml:
+	mkdir -p ../readaloudkit-kotlin/src/test/resources
+	cp Tests/ReadAloudKitTests/Resources/*.yaml Tests/ReadAloudKitTests/Resources/*.json ../readaloudkit-kotlin/src/test/resources/
 
 build: lint test-build test docs
 	swift build
