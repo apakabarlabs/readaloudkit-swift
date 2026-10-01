@@ -19,6 +19,9 @@ line the server holds, and nobody can say which is right.
   the build that misheard it.
 - **What a build is allowed to mishear.** `RecognizerQuirks` carries those
   spellings, narrowed where a word is only misheard in one turn of phrase.
+- **What a recogniser answers.** `SpokenLineTracker.corrected(_:)` applies a build's
+  table to its own transcript, so a transcript leaves the recogniser already patched
+  and whatever checks it needs no table of the build that heard it.
 - **Where the reader is.** Which line is being read, which words of it are
   already behind, and which word the narration is on.
 - **Whether a piece is finished**, and what a stage of a drill still owes.

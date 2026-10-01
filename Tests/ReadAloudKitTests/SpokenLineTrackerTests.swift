@@ -4,9 +4,33 @@ import Testing
 
 struct TrackerCases: Codable {
     let tests: [TrackerCase]
+    let corrections: [CorrectionCase]
+
+    private static var file: Self {
+        get throws { try Cases.loadRefusingUnreadKeys("tracker_tests.yaml", as: Self.self) }
+    }
 
     static var all: [TrackerCase] {
-        get throws { try Cases.loadRefusingUnreadKeys("tracker_tests.yaml", as: Self.self).tests }
+        get throws { try file.tests }
+    }
+
+    static var allCorrections: [CorrectionCase] {
+        get throws { try file.corrections }
+    }
+}
+
+struct CorrectionCase: NamedCase {
+    let name: String
+    let lines: [String]
+    let quirks: [String: [AllowanceEntry]]?
+    let interiorMarks: String
+    let elisions: [String: [String]]?
+    let heard: String
+    let corrected: String
+
+    private enum CodingKeys: String, CodingKey {
+        case name, lines, quirks, elisions, heard, corrected
+        case interiorMarks = "interior_marks"
     }
 }
 
@@ -69,5 +93,17 @@ struct SpokenLineTrackerTests {
                     == attempts.map { WordAttempt(word: $0.word, check: $0.check) }
             )
         }
+    }
+
+    @Test(arguments: try TrackerCases.allCorrections)
+    func answersWithTheTableApplied(_ example: CorrectionCase) {
+        let tracker = SpokenLineTracker(
+            lines: example.lines,
+            quirks: Cases.quirks(example.quirks),
+            elisions: Cases.elisions(example.elisions),
+            tokenizer: Cases.tokenizer(interiorMarks: example.interiorMarks)
+        )
+
+        #expect(tracker.corrected(example.heard) == example.corrected)
     }
 }

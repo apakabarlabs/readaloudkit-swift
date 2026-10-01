@@ -4,6 +4,19 @@ ReadAloudKit checks a reading aloud of a printed text against that text: which w
 words were said, where in the text the reader is, and when each word sounds in a
 recorded narration.
 
+## 0.4.0
+
+### Added
+
+- `SpokenLineTracker.corrected(_:)`: a transcript with the tracker's hearing table
+  applied, the answer a recogniser gives once it carries its own table. Every span the
+  table lets stand for printed words comes back in the printed spelling; the rest,
+  case and punctuation included, stays as heard. A full form the work lists for an
+  elided spelling is left as heard, since saying it already counts as saying the
+  printed word. Call it with the table of the build that heard the transcript, then
+  check the result with `RecognizerQuirks.none`, as you would a transcript from a
+  server that applies its own table.
+
 ## 0.3.0
 
 Two JSON documents your server may publish are read here: a *narration alignment*, the

@@ -173,6 +173,36 @@ public struct SpokenLineTracker: Sendable {
         return Progress(checks: checks)
     }
 
+    /// The transcript as its recogniser answers once its hearing table is applied.
+    ///
+    /// Every span that ``quirks`` lets stand for printed words is put back in the printed
+    /// spelling; everything else, case and punctuation included, stays as heard. A full
+    /// form ``elisions`` gives for an elided spelling is left as heard, because a reader
+    /// who says it has said the printed word. A recogniser and its table answer as one,
+    /// so whatever checks the result needs no table of the build that heard it.
+    public func corrected(_ transcript: String) -> String {
+        let spans = tokenizer.wordRanges(in: transcript)
+        let heard = spans.map { String(transcript[$0]) }
+        let checked = SpokenWords.check(
+            expected: expected,
+            heard: heard,
+            quirks: quirks,
+            elisions: elisions
+        )
+        var restored = ""
+        var kept = transcript.startIndex
+        for index in checked.faithful.sorted() {
+            let match = checked.matches[index]
+            guard let first = match.heard.first, let last = match.heard.last else { continue }
+            let said = heard[match.heard].joined(separator: " ")
+            let printed = expected[match.expected].joined(separator: " ")
+            guard !Self.isFaithful(said, to: printed, elisions: elisions) else { continue }
+            restored += transcript[kept..<spans[first].lowerBound] + printed
+            kept = spans[last].upperBound
+        }
+        return restored + transcript[kept...]
+    }
+
     /// Pairs the original printed spellings with their check results.
     public func attempts(in progress: Progress) -> [WordAttempt] {
         zip(expected, progress.checks).map { word, check in
