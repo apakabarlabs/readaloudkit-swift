@@ -5,7 +5,7 @@ FETCH = curl --fail --silent --show-error
 
 .DEFAULT_GOAL := build
 
-.PHONY: build test test-build docs comments lint lint-fix format clean install install-tools served sync-yaml
+.PHONY: build test test-build docs comments lint lint-fix format install install-tools served sync-yaml
 
 sync-yaml:
 	mkdir -p ../readaloudkit-kotlin/src/test/resources
@@ -40,10 +40,6 @@ lint-fix:
 
 format:
 	swift-format format --in-place --recursive Sources Tests Package.swift
-
-clean:
-	swift package clean
-	rm -rf .build
 
 install-tools:
 	brew install swiftlint swift-format
